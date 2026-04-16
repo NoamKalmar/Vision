@@ -197,6 +197,8 @@ class Robot:
         self.debug_threshold_mode = None
 
     def close(self) -> None:
+        if self.serial_com is not None:
+            self.serial_com.close()
         for camera in self.cameras:
             camera.close()
         cv2.destroyAllWindows()
