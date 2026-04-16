@@ -1,6 +1,7 @@
 import cv2
 import serial
 
+from serial_com import SerialCommunicator
 from letters import Letter, LettersConfig, get_template_contours
 from rings import Color
 from robot import Robot
@@ -55,7 +56,7 @@ def main():
     )
     serial_com = None
     if not NO_SERIAL:
-        serial_com = serial.Serial(port=PORT, baudrate=BAUDRATE)
+        serial_com = SerialCommunicator(PORT, BAUDRATE)
     robot = Robot(
         name="Vision",
         serial_com=serial_com,

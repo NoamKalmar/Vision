@@ -3,9 +3,9 @@ import time
 
 import cv2
 import numpy as np
-import serial
 
 from camera import Camera
+from serial_com import SerialCommunicator
 import letters
 import rings
 
@@ -33,7 +33,7 @@ class Robot:
     def __init__(
             self,
             name: str,
-            serial_com: serial.Serial,
+            serial_com: SerialCommunicator | None,
             cap_indexes: list[int],
             num_scan_frames: int,
             time_to_stop: float,
@@ -69,6 +69,7 @@ class Robot:
         self.debug_contours_mode: bool = False
 
     def loop(self) -> None:
+        self.serial_com.try_connect()
         while True:
             # try:
             quit = self.loop_cycle()
@@ -97,7 +98,10 @@ class Robot:
                 # Starting a scan and acting upon the results
                 camera.scan()
                 victim_status = self.get_victim_status(camera)
-                self.handle_victim(i, victim_status)
+                serial_error = self.handle_victim(i, victim_status)
+                if serial_error:
+                    print("Serial Error: Trying to reconnect")
+                    self.serial_com.try_connect()
 
         self.show_debug(self.debug_chosen_camera_index)
 
@@ -149,11 +153,13 @@ class Robot:
         return VictimStatus.FAKE
 
 
-    def handle_victim(self, camera_index: int, status: VictimStatus) -> None:
+    def handle_victim(self, camera_index: int, status: VictimStatus) -> bool:
+        # Returns wether the message was sent successfully
         print(f"Handling victim of status {status} coming from camera {camera_index}")
-        message = f"{camera_index}:{status.value}"
-        if self.serial_com is not None:
-            self.serial_com.write(bytes(message, "utf-8"))
+        if self.serial_com is None:
+            return False
+        error = self.serial_com.send_victim_message(camera_index, status.value)
+        return error
 
     def show_debug(self, camera_index: int) -> None:
         camera = self.cameras[camera_index]
