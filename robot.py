@@ -33,6 +33,7 @@ class Robot:
     def __init__(
             self,
             name: str,
+            debug_mode: bool,
             serial_com: SerialCommunicator | None,
             cap_indexes: list[int],
             num_scan_frames: int,
@@ -43,6 +44,7 @@ class Robot:
             more_color_ranges: dict[rings.Color, tuple[tuple, tuple]]
     ) -> None:
         self.name = name
+        self.debug_mode = debug_mode
         self.serial_com = serial_com
         self.letters_config = letters_config
         self.color_ranges = color_ranges
@@ -61,6 +63,7 @@ class Robot:
 
         self.no_scan: bool = False  
 
+        # Relevant only for debug mode
         self.debug_chosen_camera_index: int = 0
         self.debug_ring: cv2.typing.MatLike | None = None
         self.debug_points: list[tuple[int, int]] | None = None
@@ -69,7 +72,8 @@ class Robot:
         self.debug_contours_mode: bool = False
 
     def loop(self) -> None:
-        self.serial_com.try_connect()
+        if self.serial_com is not None:
+            self.serial_com.try_connect()
         while True:
             # try:
             quit = self.loop_cycle()
@@ -103,6 +107,13 @@ class Robot:
                     print("Serial Error: Trying to reconnect")
                     self.serial_com.try_connect()
 
+        if self.debug_mode:
+            return self.debug_loop()
+
+        return False
+
+    def debug_loop(self) -> bool:
+        # Returns whether the user wants to quit
         self.show_debug(self.debug_chosen_camera_index)
 
         key = cv2.waitKey(1)
@@ -124,8 +135,6 @@ class Robot:
                     self.debug_chosen_camera_index = index
         except ValueError:
             pass
-
-        return False
 
     def get_victim_status(self, camera: Camera) -> VictimStatus:
         frames_buffer = camera.frames_buffer
@@ -162,6 +171,9 @@ class Robot:
         return error
 
     def show_debug(self, camera_index: int) -> None:
+        if len(self.cameras) == 0:
+            cv2.imshow(self.name, np.zeros((480, 480, 3)))
+            return
         camera = self.cameras[camera_index]
         if camera.error:
             cv2.imshow("Error", np.zeros((480, 480, 3)))

@@ -1,3 +1,5 @@
+import argparse
+
 import cv2
 import serial
 
@@ -37,14 +39,33 @@ RIGHT_CAP_INDEX = 2
 
 PORT = "/dev/ttyUSB0"
 BAUDRATE = 115200
-NO_SERIAL = False
 
 #!!!
 # TO DO: add circularity validation for letters: (4 * pie * area) / (perimeter^2)
 # TO DO: CHECK WHY COLORS RETURN A LOT OF NONES
 #!!!
 
-def main():
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--noserial",
+        action="store_true",
+        help="run without connecting a serial device to communicate with"
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="display the debug window, containg different information, mostly cameras input"
+    )
+    parser.add_argument(
+        "--caps",
+        default=f"{LEFT_CAP_INDEX},{RIGHT_CAP_INDEX}",
+        help="a list of the webcams indexes to be used, seperated by spaces (e.g. \"0 2\"). To not use any cameras, input \" \""
+    )
+    return parser.parse_args()
+
+def main() -> None:
+    args = parse_args()
     templates = get_template_contours(IMAGE_PATHS, BINARY_THRESHOLD)
     letters_config = LettersConfig(
         templates=templates,
@@ -55,12 +76,16 @@ def main():
         normal_solidity_range_for_letter=NORMAL_SOLIDITY_RANGES
     )
     serial_com = None
-    if not NO_SERIAL:
+    if not args.noserial:
         serial_com = SerialCommunicator(PORT, BAUDRATE)
+    cap_indexes = [] if args.caps == " " else args.caps.split(",")
+    for i, cap_index in enumerate(cap_indexes):
+        cap_indexes[i] = int(cap_index)
     robot = Robot(
         name="Vision",
+        debug_mode=args.debug,
         serial_com=serial_com,
-        cap_indexes=[LEFT_CAP_INDEX, RIGHT_CAP_INDEX],
+        cap_indexes=cap_indexes,
         num_scan_frames=NUM_SCAN_FRAMES,
         time_to_stop=ROBOT_STOP_TIME,
         time_between_scans=TIME_BETWEEN_SCANS,
