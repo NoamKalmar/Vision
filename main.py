@@ -55,7 +55,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--debug",
         action="store_true",
-        help="display the debug window, containg different information, mostly cameras input"
+        help="""activates debug mode which has effects:
+        1. display the debug window, containg different information, mostly cameras input
+        2. crash if the program encounters an error in a loop cycle
+        """
     )
     parser.add_argument(
         "--caps",

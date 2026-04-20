@@ -74,16 +74,23 @@ class Robot:
     def loop(self) -> None:
         if self.serial_com is not None:
             self.serial_com.try_connect()
-        while True:
-            # try:
-            quit = self.loop_cycle()
-            if quit:
-                break
-            # except:
-                # print("An error occured")
-        self.close()
+        try:
+            while True:
+                try:
+                    quit = self.loop_cycle()
+                    if quit:
+                        break
+                except Exception as e:
+                    # If debug mode is on, then crash the program with the error
+                    # Otherwise, just print the error message and move on to the next loop cycle
+                    if self.debug_mode:
+                        raise e
+                    print(e.with_traceback)
+        finally:
+            self.close()
 
     def loop_cycle(self) -> bool:
+        a = 10 / 0
         for i, camera in enumerate(self.cameras):
             if not camera.on:
                 continue
