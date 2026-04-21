@@ -1,11 +1,15 @@
 import time
+import platform
+
 import cv2
+
+CAP_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
 
 class Camera:
     def __init__(self, cap_index: int, num_scan_frames: int) -> None:
         self.cap_index = cap_index
         self.num_scan_frames = num_scan_frames
-        self.cap = cv2.VideoCapture(cap_index, cv2.CAP_V4L2)
+        self.cap = cv2.VideoCapture(cap_index, CAP_API)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
         self.on: bool = True
