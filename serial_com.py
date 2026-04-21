@@ -41,6 +41,15 @@ class SerialCommunicator:
             print("Could not connect to the default port. Waiting for a new port.")
             self.wait_connect()
 
+    def check_connection(self) -> bool:
+        if self.serial_com is None:
+            return False
+        try:
+            self.serial_com.write(b".")
+        except serial.SerialException:
+            return False
+        return True
+
     def send_victim_message(self, camera_index: int, victim_value: int) -> bool:
         """Message format: <camera_index>:<victim_value>
         Returns whether there was an error

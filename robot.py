@@ -1,5 +1,6 @@
 from enum import Enum
 import time
+import traceback
 
 import cv2
 import numpy as np
@@ -28,6 +29,8 @@ WHITE = (255, 255, 255)
 RED = (0, 0, 255)
 GREEN = (0, 255, 0)
 BLUE = (255, 0, 0)
+
+TIME_BETWEEN_SERIAL_CONNECTION_CHECKS = 5
 
 class Robot:
     def __init__(
@@ -62,6 +65,7 @@ class Robot:
             self.cameras.append(camera)
 
         self.no_scan: bool = False  
+        self.last_serial_check_time: int = 0
 
         # Relevant only for debug mode
         self.debug_chosen_camera_index: int = 0
@@ -85,12 +89,18 @@ class Robot:
                     # Otherwise, just print the error message and move on to the next loop cycle
                     if self.debug_mode:
                         raise e
-                    print(e.with_traceback)
+                    traceback.print_exc()
         finally:
             self.close()
 
     def loop_cycle(self) -> bool:
-        a = 10 / 0
+        # Check serial connection and detect if needed
+        if self.serial_com is not None:
+            if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
+                self.last_serial_check_time = time.time()
+                if not self.serial_com.check_connection:
+                    self.serial_com.try_connect()
+        # Check for victims and act accordingly
         for i, camera in enumerate(self.cameras):
             if not camera.on:
                 continue
