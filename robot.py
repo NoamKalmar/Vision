@@ -1,12 +1,14 @@
 from enum import Enum
 import time
 import traceback
+from typing import Literal
 
 import cv2
 import numpy as np
 
 from camera import Camera
 from serial_com import SerialCommunicator
+from map_display import MapDisplay
 import letters
 import rings
 
@@ -66,14 +68,18 @@ class Robot:
 
         self.no_scan: bool = False  
         self.last_serial_check_time: int = 0
-
+        
         # Relevant only for debug mode
-        self.debug_chosen_camera_index: int = 0
-        self.debug_ring: cv2.typing.MatLike | None = None
-        self.debug_points: list[tuple[int, int]] | None = None
-        self.debug_chosen_contour: cv2.typing.MatLike | None = None
-        self.debug_threshold_mode: bool = False
-        self.debug_contours_mode: bool = False
+        if self.debug_mode:
+            self.debug_display_mode: Literal["camera", "map"] = "camera"
+            self.debug_window_title: str = ""
+            self.debug_map_display: MapDisplay = MapDisplay()
+            self.debug_chosen_camera_index: int = 0
+            self.debug_ring: cv2.typing.MatLike | None = None
+            self.debug_points: list[tuple[int, int]] | None = None
+            self.debug_chosen_contour: cv2.typing.MatLike | None = None
+            self.debug_threshold_mode: bool = False
+            self.debug_contours_mode: bool = False
 
     def loop(self) -> None:
         if self.serial_com is not None:
@@ -131,7 +137,7 @@ class Robot:
 
     def debug_loop(self) -> bool:
         # Returns whether the user wants to quit
-        self.show_debug(self.debug_chosen_camera_index)
+        cv2.imshow(self.name, self.get_debug_image())
 
         key = cv2.waitKey(1)
         if key == ord("q"):
@@ -144,12 +150,15 @@ class Robot:
             self.debug_contours_mode = not self.debug_contours_mode
         elif key == ord("o"):
             self.cameras[self.debug_chosen_camera_index].on = not self.cameras[self.debug_chosen_camera_index].on
+        elif key == ord("m"):
+            self.debug_display_mode = "map"
         # If the key is a digit, then the debug frame should be the frame coming from the camera in that index
         try:
             if chr(key).isdigit():
                 index = int(chr(key))
                 if index < len(self.cameras):   
                     self.debug_chosen_camera_index = index
+                self.debug_display_mode = "camera"
         except ValueError:
             pass
 
@@ -187,23 +196,27 @@ class Robot:
         error = self.serial_com.send_victim_message(camera_index, status.value)
         return error
 
-    def show_debug(self, camera_index: int) -> None:
+    def get_debug_image(self) -> cv2.typing.MatLike:
+        if self.debug_display_mode == "map":
+            return self.debug_map_display.map_image
+        elif self.debug_display_mode == "camera":
+            return self.get_debug_camera_image()
+        return np.zeros((480, 480, 3))
+    
+    def get_debug_camera_image(self) -> cv2.typing.MatLike:
         if len(self.cameras) == 0:
-            cv2.imshow(self.name, np.zeros((480, 480, 3)))
-            return
-        camera = self.cameras[camera_index]
+            return np.zeros((480, 480, 3))
+        camera = self.cameras[self.debug_chosen_camera_index]
         if camera.error:
-            cv2.imshow("Error", np.zeros((480, 480, 3)))
-            return
+            return np.zeros((480, 480, 3))
         frame = camera.frame.copy()
-        status = f"{camera_index}: On" if camera.on else f"{camera_index}: Off"
+        status = f"{self.debug_chosen_camera_index}: On" if camera.on else f"{self.debug_chosen_camera_index}: Off"
         cv2.putText(frame, status, (0, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, BLUE, 2, cv2.LINE_AA)
         # Threshold mode cannot work with the other modes
         if self.debug_threshold_mode:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             _, frame = cv2.threshold(frame, self.letters_config.binary_threshold, 255, cv2.THRESH_BINARY_INV)
-            cv2.imshow(self.name, frame)
-            return
+            return frame
         
         if self.debug_contours_mode:
             contours = letters.get_contours(frame, self.letters_config.binary_threshold)
@@ -215,7 +228,7 @@ class Robot:
                 cv2.circle(frame, point, 1, WHITE, 3)
         if self.debug_chosen_contour is not None:
             cv2.drawContours(frame, [self.debug_chosen_contour], 0, GREEN, 3)
-        cv2.imshow(self.name, frame)
+        return frame
 
     def clear_debug(self) -> None:
         self.debug_ring = None
