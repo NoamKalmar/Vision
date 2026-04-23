@@ -40,8 +40,7 @@ class Robot:
             name: str,
             debug_mode: bool,
             serial_com: SerialCommunicator | None,
-            cap_indexes: list[int],
-            num_scan_frames: int,
+            cameras: list[Camera],
             time_to_stop: float,
             time_between_scans: float,
             letters_config: letters.LettersConfig,
@@ -58,13 +57,7 @@ class Robot:
         self.time_between_scans = time_between_scans
 
         # Initalize a camera for each video capture
-        self.cameras: list[Camera] = []
-        for cap_index in cap_indexes:
-            camera = Camera(
-                cap_index=cap_index,
-                num_scan_frames=num_scan_frames
-            )
-            self.cameras.append(camera)
+        self.cameras: list[Camera] = cameras
 
         self.no_scan: bool = False  
         self.last_serial_check_time: int = 0

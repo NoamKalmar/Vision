@@ -4,6 +4,7 @@ import cv2
 import serial
 
 from serial_com import SerialCommunicator
+from camera import Camera
 from letters import Letter, LettersConfig, get_template_contours
 from rings import Color
 from robot import Robot
@@ -61,9 +62,14 @@ def parse_args() -> argparse.Namespace:
         """
     )
     parser.add_argument(
-        "--caps",
-        default=f"{LEFT_CAP_INDEX},{RIGHT_CAP_INDEX}",
-        help="a list of the webcams indexes to be used, seperated by spaces (e.g. \"0 2\"). To not use any cameras, input \" \""
+        "--left",
+        default=f"{LEFT_CAP_INDEX}",
+        help="The video capture index for the left camera (-1 to not use it)"
+    )
+    parser.add_argument(
+        "--right",
+        default=f"{RIGHT_CAP_INDEX}",
+        help="The video capture index for the right camera (-1 to not ues it)"
     )
     return parser.parse_args()
 
@@ -81,15 +87,17 @@ def main() -> None:
     serial_com = None
     if not args.noserial:
         serial_com = SerialCommunicator(PORT, BAUDRATE)
-    cap_indexes = [] if args.caps == " " else args.caps.split(" ")
-    for i, cap_index in enumerate(cap_indexes):
-        cap_indexes[i] = int(cap_index)
+    cap_indexes = []
+    if int(args.left) >= 0: cap_indexes.append(int(args.left))
+    if int(args.right) >= 0: cap_indexes.append(int(args.right))
+    cameras = []
+    for cap_index in cap_indexes:
+        cameras.append(Camera(cap_index, NUM_SCAN_FRAMES))
     robot = Robot(
         name="Vision",
         debug_mode=args.debug,
         serial_com=serial_com,
-        cap_indexes=cap_indexes,
-        num_scan_frames=NUM_SCAN_FRAMES,
+        cameras=cameras,
         time_to_stop=ROBOT_STOP_TIME,
         time_between_scans=TIME_BETWEEN_SCANS,
         letters_config=letters_config,
