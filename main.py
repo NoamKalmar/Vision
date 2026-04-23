@@ -25,14 +25,14 @@ NUM_SCAN_FRAMES = 30
 
 COLOR_RANGES = {
     Color.RED: ((0, 120, 70), (10, 255, 255)),
-    Color.YELLOW: ((20, 100, 100), (30, 255, 255)),
+    Color.YELLOW: ((20, 100, 100), (35, 255, 255)),
     Color.GREEN: ((35, 80, 80), (85, 255, 255)),
     Color.BLUE: ((90, 80, 80), (130, 255, 255))
 }
 
 MORE_COLOR_RANGES = {Color.RED: ((170, 120, 70), (179, 255, 255))}
 
-ROBOT_STOP_TIME = 1
+ROBOT_STOP_TIME = 5
 TIME_BETWEEN_SCANS = 6
 
 RIGHT_CAP_INDEX = 0
@@ -40,7 +40,7 @@ LEFT_CAP_INDEX = 2
 RIGHT_FLIP = True
 LEFT_FLIP = False
 
-PORT = "/dev/ttyUSB0"
+PORT = "/dev/ttyUSB1"
 BAUDRATE = 115200
 
 #!!!
@@ -89,25 +89,27 @@ def main() -> None:
     serial_com = None
     if not args.noserial:
         serial_com = SerialCommunicator(PORT, BAUDRATE)
-    cameras = []
+    left_camera = None
     if int(args.left) >= 0:
-        cameras.append(Camera(
+        left_camera = Camera(
             int(args.left),
             NUM_SCAN_FRAMES,
             LEFT_FLIP
-        ))
+        )
+    right_camera = None
     if int(args.right) >= 0:
-        cameras.append(Camera(
+        right_camera = Camera(
             int(args.right),
             NUM_SCAN_FRAMES,
             RIGHT_FLIP
-        ))
+        )
     
     robot = Robot(
         name="Vision",
         debug_mode=args.debug,
         serial_com=serial_com,
-        cameras=cameras,
+        left_camera=left_camera,
+        right_camera=right_camera,
         time_to_stop=ROBOT_STOP_TIME,
         time_between_scans=TIME_BETWEEN_SCANS,
         letters_config=letters_config,

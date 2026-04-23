@@ -34,13 +34,17 @@ BLUE = (255, 0, 0)
 
 TIME_BETWEEN_SERIAL_CONNECTION_CHECKS = 5
 
+LOWER_WHITE = np.array([0, 0, 160])
+UPPER_WHITE = np.array([180, 60, 255])
+
 class Robot:
     def __init__(
             self,
             name: str,
             debug_mode: bool,
             serial_com: SerialCommunicator | None,
-            cameras: list[Camera],
+            left_camera: Camera | None,
+            right_camera: Camera | None,
             time_to_stop: float,
             time_between_scans: float,
             letters_config: letters.LettersConfig,
@@ -57,7 +61,7 @@ class Robot:
         self.time_between_scans = time_between_scans
 
         # Initalize a camera for each video capture
-        self.cameras: list[Camera] = cameras
+        self.cameras: list[Camera] = [left_camera, right_camera]
 
         self.no_scan: bool = False  
         self.last_serial_check_time: int = 0
@@ -97,10 +101,12 @@ class Robot:
         if self.serial_com is not None:
             if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
                 self.last_serial_check_time = time.time()
-                if not self.serial_com.check_connection:
+                if not self.serial_com.check_connection():
                     self.serial_com.try_connect()
         # Check for victims and act accordingly
         for i, camera in enumerate(self.cameras):
+            if camera is None:
+                continue
             camera.update_frame()
             if camera.error:
                 print(f"Error while reading from camera index {i}")
@@ -171,12 +177,13 @@ class Robot:
         colors, ring = rings.frames_get_colors(frames_buffer, self.color_ranges, self.more_color_ranges)
         if colors is not None:
             print(colors)
-            self.debug_ring = ring
-            self.debug_points = rings.point_per_layer(ring)
             health = rings.colors_to_health(colors)
             status = HEALTH_TO_STATUS.get(health)
             if status is not None:
                 return status
+        if ring is not None:
+            self.debug_ring = ring
+            self.debug_points = rings.point_per_layer(ring)
         # If neither a letter nor a ring were found, then return a fake status
         return VictimStatus.FAKE
 
@@ -200,7 +207,7 @@ class Robot:
         if len(self.cameras) == 0:
             return np.zeros((480, 480, 3))
         camera = self.cameras[self.debug_chosen_camera_index]
-        if camera.error:
+        if camera is None or camera.error:
             return np.zeros((480, 480, 3))
         frame = camera.frame.copy()
         status = f"{self.debug_chosen_camera_index}: On" if camera.on else f"{self.debug_chosen_camera_index}: Off"
@@ -235,8 +242,20 @@ class Robot:
         if self.serial_com is not None:
             self.serial_com.close()
         for camera in self.cameras:
+            if camera is None:
+                continue
             camera.close()
         cv2.destroyAllWindows()
 
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
-    return rings.check_potential_ring(image) or letters.check_potential_letter(image, letters_config)
+    if letters.check_potential_letter(image, letters_config):
+        return True
+    if rings.check_potential_ring(image):
+        return True
+
+def get_white_percent(image: cv2.typing.MatLike) -> float:
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, LOWER_WHITE, UPPER_WHITE)
+    white = cv2.countNonZero(mask)
+    total_pixels = mask.size
+    return white / total_pixels
