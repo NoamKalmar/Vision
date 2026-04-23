@@ -107,6 +107,8 @@ def frames_get_colors(
         ring = max(circles, key=lambda circle: circle[2])
         points = point_per_layer(ring)
         for i, point in enumerate(points):
+            if point[1] > frame.shape[0] or point[0] > frame.shape[1]:
+                return None, None
             hsv_pixel = cv2.cvtColor(frame[point[1], point[0]].reshape(1, 1, 3), cv2.COLOR_BGR2HSV)[0][0]
             color = classify_color(hsv_pixel, color_ranges, more_color_ranges)
             if color is not None:
