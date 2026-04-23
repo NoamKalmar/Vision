@@ -101,11 +101,11 @@ class Robot:
                     self.serial_com.try_connect()
         # Check for victims and act accordingly
         for i, camera in enumerate(self.cameras):
-            if not camera.on:
-                continue
             camera.update_frame()
             if camera.error:
                 print(f"Error while reading from camera index {i}")
+                continue
+            if not camera.on:
                 continue
             if check_potential_victim(camera.frame, self.letters_config):
                 # Check if the minimal time between scans from the same camera has passed
