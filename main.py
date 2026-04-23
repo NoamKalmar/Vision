@@ -81,7 +81,7 @@ def main() -> None:
     serial_com = None
     if not args.noserial:
         serial_com = SerialCommunicator(PORT, BAUDRATE)
-    cap_indexes = [] if args.caps == " " else args.caps.split(",")
+    cap_indexes = [] if args.caps == " " else args.caps.split(" ")
     for i, cap_index in enumerate(cap_indexes):
         cap_indexes[i] = int(cap_index)
     robot = Robot(
