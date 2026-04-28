@@ -103,6 +103,7 @@ class Robot:
                 self.last_serial_check_time = time.time()
                 if not self.serial_com.check_connection():
                     self.serial_com.try_connect()
+            self.serial_com.read()
         # Check for victims and act accordingly
         for i, camera in enumerate(self.cameras):
             if camera is None:
@@ -118,13 +119,15 @@ class Robot:
                 if time.time() - camera.last_scan_time < self.time_between_scans:
                     continue
                 # Sending a signal for the robot to stop
-                self.handle_victim(i, VictimStatus.POTENTIAL)
+                self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 print(f"Starting a scan on camera index {i} in {self.time_to_stop} seconds")
-                time.sleep(self.time_to_stop)
+                is_ready = self.debug_wait_for_ready(5)
+                if not is_ready:
+                    continue
                 # Starting a scan and acting upon the results
                 camera.scan()
                 victim_status = self.get_victim_status(camera)
-                serial_error = self.handle_victim(i, victim_status)
+                serial_error = self.handle_victim(i, victim_status, time.time())
                 if serial_error:
                     print("Serial Error: Trying to reconnect")
                     self.serial_com.try_connect()
@@ -188,12 +191,12 @@ class Robot:
         return VictimStatus.FAKE
 
 
-    def handle_victim(self, camera_index: int, status: VictimStatus) -> bool:
+    def handle_victim(self, camera_index: int, status: VictimStatus, time_of_detection: float) -> bool:
         # Returns wether the message was sent successfully
         print(f"Handling victim of status {status} coming from camera {camera_index}")
         if self.serial_com is None:
             return False
-        error = self.serial_com.send_victim_message(camera_index, status.value)
+        error = self.serial_com.send_victim_message(camera_index, status.value, time_of_detection)
         return error
 
     def get_debug_image(self) -> cv2.typing.MatLike:
@@ -230,6 +233,16 @@ class Robot:
             cv2.drawContours(frame, [self.debug_chosen_contour], 0, GREEN, 3)
         return frame
 
+    def debug_wait_for_ready(self, timeout: float = 5) -> bool:
+        start_time = time.time()
+        while time.time() - start_time <= timeout:
+            if self.serial_com is not None:
+                self.serial_com.read()
+                if self.serial_com.got_ready():
+                    return True
+            self.debug_loop()
+        return False
+
     def clear_debug(self) -> None:
         self.debug_ring = None
         self.debug_contours = None
@@ -248,10 +261,15 @@ class Robot:
         cv2.destroyAllWindows()
 
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
-    if letters.check_potential_letter(image, letters_config):
+    contours = letters.get_contours(image, letters_config.binary_threshold)
+    contours = letters.filter_contours_by_area(contours, letters_config.min_area)
+    if len(contours) > 0:
         return True
-    if rings.check_potential_ring(image):
-        return True
+    # if letters.check_potential_letter(image, letters_config):
+    #     return True
+    # if rings.check_potential_ring(image):
+    #     return True
+    return False
 
 def get_white_percent(image: cv2.typing.MatLike) -> float:
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)

@@ -1,6 +1,9 @@
-from time import sleep
+from time import sleep, time
 import serial
 from serial.tools.list_ports import comports
+
+START_MESSAGE = "START"
+READY_MESSAGE = "READY"
 
 class SerialCommunicator:
     def __init__(self, default_port: str | None = None, baudrate: int = 9600) -> None:
@@ -8,6 +11,8 @@ class SerialCommunicator:
         self.baudrate = baudrate
         self.serial_com: serial.Serial | None = None
 
+        self.start_time: float | None = None
+        self.is_ready = False
 
     def connect(self, port: str) -> bool:
         # Returns whether there was and error
@@ -53,16 +58,38 @@ class SerialCommunicator:
             if port.device == self.serial_com.port:
                 return True
         return False
-
-    def send_victim_message(self, camera_index: int, victim_value: int) -> bool:
-        """Message format: <camera_index>:<victim_value>
+    
+    def send_victim_message(self, camera_index: int, victim_value: int, time_of_detection: float) -> bool:
+        """Message format:
+        <camera_index>:<victim_value>:<(time_of_detection - start_time) (round to 1 decimal point) * 1000>:
         Returns whether there was an error
         """
-        message = f"{camera_index}:{victim_value}"
+        if self.start_time == None:
+            print("Error while trying to send message: START message have not been sent yet")
+            return
+        message = f"{camera_index}:{victim_value}:{int(round((time_of_detection - self.start_time) * 1000, -2))}:"
         print(message)
         try:
             self.serial_com.write(bytes(message, "utf-8"))
         except serial.SerialException:
+            return True
+        return False
+    
+    def read(self) -> None:
+        if self.serial_com.in_waiting <= 0:
+            return
+        data = self.serial_com.readline().decode("utf-8").strip()
+        print(f"Serial data: {data}")
+        if START_MESSAGE in data:
+            print("Got START message")
+            self.start_time = time()
+        if READY_MESSAGE in data:
+            print("Got READY message")
+            self.is_ready = True
+
+    def got_ready(self) -> bool:
+        if self.is_ready:
+            self.is_ready = False
             return True
         return False
 

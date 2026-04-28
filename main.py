@@ -40,7 +40,7 @@ LEFT_CAP_INDEX = 2
 RIGHT_FLIP = True
 LEFT_FLIP = False
 
-PORT = "/dev/ttyUSB1"
+PORT = "/dev/ttyUSB0"
 BAUDRATE = 115200
 
 #!!!
@@ -81,7 +81,7 @@ def main() -> None:
     letters_config = LettersConfig(
         templates=templates,
         binary_threshold=BINARY_THRESHOLD,
-        min_area=50,
+        min_area=35,
         min_matches=MIN_MATCHES,
         normal_width_to_height_range=(0.5, 1.5),
         normal_solidity_range_for_letter=NORMAL_SOLIDITY_RANGES

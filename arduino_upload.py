@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import os
-
+import sys
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
@@ -8,7 +8,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 BINARY_FILENAME = "binary.hex"
 
-app.config("UPLOAD_FOLDER") = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 @app.route("/")
 def home():
@@ -29,9 +29,14 @@ def upload_file():
         os.remove(os.path.join(UPLOAD_FOLDER, f))
     
     file.save(file_path)
+    upload()
     return jsonify({
         "message": "File uploaded"
     })
+
+def upload():
+    command = f"avrdude -v -patmega2560 -cwiring -P {sys.argv[1]} -b115200 -D -U flash:w:{UPLOAD_FOLDER}/{BINARY_FILENAME}:i"
+    os.system(command)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
