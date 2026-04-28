@@ -99,6 +99,7 @@ def get_letter(
     if config.min_area is not None:
         contours = filter_contours_by_area(contours, config.min_area)
     matches, best_contours = check_for_templates(contours, config.templates)
+    # print(matches)
     sorted_matches = sorted(matches.items(), key=lambda match: match[1])
     for letter, match in sorted_matches:
         if is_match_valid(

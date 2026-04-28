@@ -97,6 +97,12 @@ class Robot:
             self.close()
 
     def loop_cycle(self) -> bool:
+        # for i, camera in enumerate(self.cameras):
+        # self.cameras[0].update_frame()
+        # letter, _ = letters.get_letter(self.cameras[0].frame, self.letters_config)
+        # print(letter)
+        # cv2.imshow("Vision", self.cameras[0].frame)
+        # return self.debug_loop()
         # Check serial connection and detect if needed
         if self.serial_com is not None:
             if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
@@ -119,11 +125,12 @@ class Robot:
                 if time.time() - camera.last_scan_time < self.time_between_scans:
                     continue
                 # Sending a signal for the robot to stop
-                self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
+                # self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 print(f"Starting a scan on camera index {i} in {self.time_to_stop} seconds")
-                is_ready = self.debug_wait_for_ready(5)
-                if not is_ready:
-                    continue
+                if self.serial_com is not None:
+                    is_ready = self.debug_wait_for_ready(5)
+                    if not is_ready:
+                        continue
                 # Starting a scan and acting upon the results
                 camera.scan()
                 victim_status = self.get_victim_status(camera)
@@ -240,6 +247,9 @@ class Robot:
                 self.serial_com.read()
                 if self.serial_com.got_ready():
                     return True
+            for camera in self.cameras:
+                if camera is not None:
+                    camera.update_frame()
             self.debug_loop()
         return False
 

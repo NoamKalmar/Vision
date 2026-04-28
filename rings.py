@@ -26,7 +26,7 @@ def check_potential_ring(image: cv2.typing.MatLike) -> bool:
 def get_circles(image: cv2.typing.MatLike) -> cv2.typing.MatLike | None:
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, image.shape[0] / 8,
-                                param1=150, param2=65,
+                                param1=100, param2=60,
                                 minRadius=20, maxRadius=500)
     if circles is None:
         return []
@@ -57,69 +57,78 @@ def classify_color(
             return color
     return None
 
-# def frames_get_colors(
-#         last_frames: list[cv2.typing.MatLike], 
-#         color_ranges: dict[Color, tuple[tuple, tuple]],
-#         more_color_ranges: dict[Color, tuple[tuple, tuple]]
-# ) -> tuple[list[Color], tuple] | None:
-#     """Returns the colors of the ring and the ring"""
-#     # The biggest ring is the circle
-#     ring = None
-#     for frame in last_frames:
-#         circles = get_circles(frame)
-#         if len(circles) == None:
-#             continue
-#         biggest_circle = max(circles, key=lambda circle: circle[2])
-#         if ring is None:
-#             ring = biggest_circle
-#         else:
-#             ring = max(ring, biggest_circle, key=lambda circle: circle[2])
-#     if ring is None:
-#         return None, None
-#     # For each layer, its color should be the color that was found in most frames
-#     points = point_per_layer(ring)
-#     layer_colors_counters = [Counter() for _ in range(5)]
-#     for frame in last_frames:
-#         for i, point in enumerate(points):
-#             hsv_pixel = cv2.cvtColor(frame[point[1], point[0]].reshape(1, 1, 3), cv2.COLOR_BGR2HSV)[0][0]
-#             color = classify_color(hsv_pixel, color_ranges, more_color_ranges)
-#             if color is not None:
-#                 layer_colors_counters[i][color] += 1
-#     layer_colors = []
-#     for i in range(5):
-#         if len(layer_colors_counters[i]) == 0:
-#             return None, None
-#         layer_colors.append(layer_colors_counters[i].most_common(1)[0][0])
-#     return layer_colors, ring
-
 def frames_get_colors(
         last_frames: list[cv2.typing.MatLike], 
         color_ranges: dict[Color, tuple[tuple, tuple]],
         more_color_ranges: dict[Color, tuple[tuple, tuple]]
 ) -> tuple[list[Color], tuple] | None:
-    """Returns the list of the colors, and the circle that was detected in the last frame"""
-    layer_colors_counters = [Counter() for _ in range(5)]
-    # For each frame, check what are the colors in each layer, and update the counters accordingly
+    """Returns the colors of the ring and the ring"""
+    # The biggest ring is the circle
+    ring = None
     for frame in last_frames:
         circles = get_circles(frame)
         if len(circles) == 0:
             continue
-        ring = max(circles, key=lambda circle: circle[2])
-        points = point_per_layer(ring)
+        biggest_circle = max(circles, key=lambda circle: circle[2])
+        if ring is None:
+            ring = biggest_circle
+        else:
+            ring = max(ring, biggest_circle, key=lambda circle: circle[2])
+    if ring is None:
+        print("error1")
+        return None, None
+    # For each layer, its color should be the color that was found in most frames
+    points = point_per_layer(ring)
+    layer_colors_counters = [Counter() for _ in range(5)]
+    for frame in last_frames:
         for i, point in enumerate(points):
             if point[1] > frame.shape[0] or point[0] > frame.shape[1]:
+                print("error2")
                 return None, None
             hsv_pixel = cv2.cvtColor(frame[point[1], point[0]].reshape(1, 1, 3), cv2.COLOR_BGR2HSV)[0][0]
             color = classify_color(hsv_pixel, color_ranges, more_color_ranges)
             if color is not None:
                 layer_colors_counters[i][color] += 1
-    # Pick the colors that have the highest values in the counters
     layer_colors = []
-    for counter in layer_colors_counters:
-        if len(counter) == 0:
-            return None, None
-        layer_colors.append(counter.most_common(1)[0][0])
+    for i in range(5):
+        if len(layer_colors_counters[i]) == 0:
+            print(layer_colors_counters)
+            return None, ring
+        layer_colors.append(layer_colors_counters[i].most_common(1)[0][0])
     return layer_colors, ring
+
+# def frames_get_colors(
+#         last_frames: list[cv2.typing.MatLike], 
+#         color_ranges: dict[Color, tuple[tuple, tuple]],
+#         more_color_ranges: dict[Color, tuple[tuple, tuple]]
+# ) -> tuple[list[Color], tuple] | None:
+#     """Returns the list of the colors, and the circle that was detected in the last frame"""
+#     layer_colors_counters = [Counter() for _ in range(5)]
+#     # For each frame, check what are the colors in each layer, and update the counters accordingly
+#     ring = None
+#     for frame in last_frames:
+#         circles = get_circles(frame)
+#         if len(circles) == 0:
+#             continue
+#         ring = max(circles, key=lambda circle: circle[2])
+#         points = point_per_layer(ring)
+#         for i, point in enumerate(points):
+#             if point[1] > frame.shape[0] or point[0] > frame.shape[1]:
+#                 return None, None
+#             hsv_pixel = cv2.cvtColor(frame[point[1], point[0]].reshape(1, 1, 3), cv2.COLOR_BGR2HSV)[0][0]
+#             color = classify_color(hsv_pixel, color_ranges, more_color_ranges)
+#             if color is not None:
+#                 layer_colors_counters[i][color] += 1
+#     if ring is None: return None, None
+#     # Pick the colors that have the highest values in the counters
+#     layer_colors = []
+#     for counter in layer_colors_counters:
+#         if len(counter) == 0:
+#             # print(layer_colors)
+#             return None, ring
+#         layer_colors.append(counter.most_common(1)[0][0])
+#     print(ring)
+#     return layer_colors, ring
 
 def colors_to_health(colors: list[Color]) -> int | None:
     health = 0

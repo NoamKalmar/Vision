@@ -16,12 +16,12 @@ IMAGE_PATHS = {Letter.PHI: "assets/phi.png",
                Letter.PSI: "assets/psi.png", 
                Letter.OMEGA: "assets/omega.png"}
 
-MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 1.5}
-NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.9, 0.93), Letter.PSI: (0.375, 0.45), Letter.OMEGA: (0.35, 0.41)}
+MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 2.3}
+NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.89, 0.94), Letter.PSI: (0.36, 0.45), Letter.OMEGA: (0.32, 0.41)}
 
-BINARY_THRESHOLD = 75
+BINARY_THRESHOLD = 100
 
-NUM_SCAN_FRAMES = 30
+NUM_SCAN_FRAMES = 1
 
 COLOR_RANGES = {
     Color.RED: ((0, 120, 70), (10, 255, 255)),
@@ -33,7 +33,7 @@ COLOR_RANGES = {
 MORE_COLOR_RANGES = {Color.RED: ((170, 120, 70), (179, 255, 255))}
 
 ROBOT_STOP_TIME = 5
-TIME_BETWEEN_SCANS = 6
+TIME_BETWEEN_SCANS = 0
 
 RIGHT_CAP_INDEX = 0
 LEFT_CAP_INDEX = 2
@@ -81,7 +81,7 @@ def main() -> None:
     letters_config = LettersConfig(
         templates=templates,
         binary_threshold=BINARY_THRESHOLD,
-        min_area=35,
+        min_area=50,
         min_matches=MIN_MATCHES,
         normal_width_to_height_range=(0.5, 1.5),
         normal_solidity_range_for_letter=NORMAL_SOLIDITY_RANGES

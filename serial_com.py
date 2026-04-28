@@ -80,6 +80,8 @@ class SerialCommunicator:
             return
         data = self.serial_com.readline().decode("utf-8").strip()
         print(f"Serial data: {data}")
+        # if self.start_time is not None:
+        #     print((time() - self.start_time) * 1000 - int(data))
         if START_MESSAGE in data:
             print("Got START message")
             self.start_time = time()
