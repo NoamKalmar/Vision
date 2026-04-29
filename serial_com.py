@@ -99,6 +99,7 @@ class SerialCommunicator:
         elif READY_MESSAGE in data:
             print(f"Got {READY_MESSAGE} message")
             self.is_ready = True
+            self.is_continue = False
         elif CONTINUE_MESSAGE in data:
             print(f"Got {CONTINUE_MESSAGE} message")
             self.is_continue = True
