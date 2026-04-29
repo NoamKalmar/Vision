@@ -106,6 +106,8 @@ class Robot:
             if not self.serial_com.check_connection():
                 self.serial_com.try_connect()
             self.serial_com.read()
+            self.cameras[0].on = self.serial_com.is_left_enabled
+            self.cameras[1].on = self.serial_com.is_right_enabled
         # Check for victims and act accordingly
         for i, camera in enumerate(self.cameras):
             if camera is None:
@@ -118,8 +120,11 @@ class Robot:
                 continue
             if check_potential_victim(camera.frame, self.letters_config):
                 # Check if the minimal time between scans from the same camera has passed
-                if time.time() - self.last_victim_time < self.time_between_scans:
-                    continue
+                # if time.time() - self.last_victim_time < self.time_between_scans:
+                #     continue
+                if self.serial_com is not None:
+                    if not self.serial_com.got_continue():
+                        continue
                 # Sending a signal for the robot to stop
                 self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 if self.serial_com is not None:

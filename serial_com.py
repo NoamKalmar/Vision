@@ -4,6 +4,12 @@ from serial.tools.list_ports import comports
 
 START_MESSAGE = "START"
 READY_MESSAGE = "READY"
+CONTINUE_MESSAGE = "CONTINUE"
+ENABLE_RIGHT_MESSAGE = "ENABLE_RIGHT"
+ENABLE_LEFT_MESSAGE = "ENABLE_LEFT"
+DISABLE_RIGHT_MESSAGE = "DISABLE_RIGHT"
+DISABLE_LEFT_MESSAGE = "DISABLE_LEFT"
+
 
 class SerialCommunicator:
     def __init__(self, default_port: str | None = None, baudrate: int = 9600) -> None:
@@ -13,6 +19,9 @@ class SerialCommunicator:
 
         self.start_time: float | None = None
         self.is_ready = False
+        self.is_continue = False
+        self.is_left_enabled = False
+        self.is_right_enabled = False
 
     def connect(self, port: str) -> bool:
         # Returns whether there was and error
@@ -85,15 +94,36 @@ class SerialCommunicator:
         # if self.start_time is not None:
         #     print((time() - self.start_time) * 1000 - int(data))
         if START_MESSAGE in data:
-            print("Got START message")
+            print(f"Got {START_MESSAGE} message")
             self.start_time = time()
-        if READY_MESSAGE in data:
-            print("Got READY message")
+        elif READY_MESSAGE in data:
+            print(f"Got {READY_MESSAGE} message")
             self.is_ready = True
+        elif CONTINUE_MESSAGE in data:
+            print(f"Got {CONTINUE_MESSAGE} message")
+            self.is_continue = True
+        elif ENABLE_LEFT_MESSAGE in data:
+            print(f"Got {ENABLE_LEFT_MESSAGE} message")
+            self.is_enable_left = True
+        elif ENABLE_RIGHT_MESSAGE in data:
+            print(f"Got {ENABLE_RIGHT_MESSAGE} message")
+            self.is_enable_right = True
+        elif DISABLE_LEFT_MESSAGE in data:
+            print(f"Got {DISABLE_LEFT_MESSAGE} message")
+            self.is_left_enabled = False
+        elif DISABLE_RIGHT_MESSAGE in data:
+            print(f"Got {DISABLE_RIGHT_MESSAGE} message")
+            self.is_right_enabled = False
 
     def got_ready(self) -> bool:
         if self.is_ready:
             self.is_ready = False
+            return True
+        return False
+    
+    def got_continue(self) -> bool:
+        if self.is_continue:
+            self.is_continue = False
             return True
         return False
 
