@@ -125,7 +125,6 @@ class Robot:
                 # Sending a signal for the robot to stop
                 if self.serial_com is not None:
                     if not self.serial_com.is_continue:
-                        print("hi")
                         continue
                 self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 if self.serial_com is not None:

@@ -19,7 +19,7 @@ class SerialCommunicator:
 
         self.start_time: float | None = None
         self.is_ready = False
-        self.is_continue = False
+        self.is_continue = True
         self.is_left_enabled = True
         self.is_right_enabled = True
 
