@@ -122,10 +122,11 @@ class Robot:
                 # Check if the minimal time between scans from the same camera has passed
                 # if time.time() - self.last_victim_time < self.time_between_scans:
                 #     continue
+                # Sending a signal for the robot to stop
                 if self.serial_com is not None:
                     if not self.serial_com.is_continue:
+                        print("hi")
                         continue
-                # Sending a signal for the robot to stop
                 self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 if self.serial_com is not None:
                     is_ready = self.debug_wait_for_ready()

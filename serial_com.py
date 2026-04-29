@@ -121,12 +121,6 @@ class SerialCommunicator:
             self.is_ready = False
             return True
         return False
-    
-    def got_continue(self) -> bool:
-        if self.is_continue:
-            self.is_continue = False
-            return True
-        return False
 
     def close(self) -> None:
         self.serial_com.close()
