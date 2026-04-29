@@ -20,8 +20,8 @@ class SerialCommunicator:
         self.start_time: float | None = None
         self.is_ready = False
         self.is_continue = False
-        self.is_left_enabled = False
-        self.is_right_enabled = False
+        self.is_left_enabled = True
+        self.is_right_enabled = True
 
     def connect(self, port: str) -> bool:
         # Returns whether there was and error
