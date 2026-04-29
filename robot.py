@@ -253,7 +253,8 @@ class Robot:
             for camera in self.cameras:
                 if camera is not None:
                     camera.update_frame()
-            self.debug_loop()
+            if self.debug_mode:            
+                self.debug_loop()
         return False
 
     def clear_debug(self) -> None:
