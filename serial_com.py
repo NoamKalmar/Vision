@@ -96,6 +96,7 @@ class SerialCommunicator:
         if START_MESSAGE in data:
             print(f"Got {START_MESSAGE} message")
             self.start_time = time()
+            self.is_continue = True
         elif READY_MESSAGE in data:
             print(f"Got {READY_MESSAGE} message")
             self.is_ready = True
