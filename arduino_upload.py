@@ -10,6 +10,8 @@ BINARY_FILENAME = "binary.hex"
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+arduino_port = "/dev/ttyUSB0"
+
 @app.route("/")
 def home():
     return "Binary upload server is running at /upload"
@@ -35,8 +37,11 @@ def upload_file():
     })
 
 def upload():
-    command = f"avrdude -v -patmega2560 -cwiring -P {sys.argv[1]} -b115200 -D -U flash:w:{UPLOAD_FOLDER}/{BINARY_FILENAME}:i"
+    command = f"avrdude -v -patmega2560 -cwiring -P {arduino_port} -b115200 -D -U flash:w:{UPLOAD_FOLDER}/{BINARY_FILENAME}:i"
     os.system(command)
 
-if __name__ == "__main__":
+def start() -> None:
     app.run(host="0.0.0.0", port=5000)
+
+if __name__ == "__main__":
+    start()

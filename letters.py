@@ -5,7 +5,9 @@ from enum import Enum
 from typing import Sequence
 from collections import Counter
 
-MORPH_KERNEL = np.ones((5, 5), np.uint8)
+MORPH_KERNEL2 = np.ones((2, 2), np.uint8)
+MORPH_KERNEL1 = np.ones((5, 5), np.uint8)
+
 
 @dataclass
 class LettersConfig:
@@ -28,7 +30,8 @@ def check_potential_letter(image: cv2.typing.MatLike, config: LettersConfig) -> 
 def get_contours(image: cv2.typing.MatLike, binary_threshold: int) -> Sequence[cv2.typing.MatLike]:
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(grayscale, binary_threshold, 255, cv2.THRESH_BINARY_INV)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, MORPH_KERNEL)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, MORPH_KERNEL1)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, MORPH_KERNEL2)
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 

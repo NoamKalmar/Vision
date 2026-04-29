@@ -64,10 +64,12 @@ class SerialCommunicator:
         <camera_index>:<victim_value>:<(time_of_detection - start_time) (round to 1 decimal point) * 1000>:
         Returns whether there was an error
         """
-        if self.start_time == None:
-            print("Error while trying to send message: START message have not been sent yet")
-            return
-        message = f"{camera_index}:{victim_value}:{int(round((time_of_detection - self.start_time) * 1000, -2))}:"
+        # if self.start_time == None:
+        #     print("Error while trying to send message: START message have not been sent yet")
+        #     return
+        # message = f"{camera_index}:{victim_value}:{int(round((time_of_detection - self.start_time) * 1000, -2))}:"
+        message = f"{camera_index}:{victim_value}:0:"
+        
         print(message)
         try:
             self.serial_com.write(bytes(message, "utf-8"))

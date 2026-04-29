@@ -20,6 +20,8 @@ COLOR_TO_HEALTH_VALUE = {
     Color.BLUE: 2
 }
 
+BLACK_MAX_VALUE = 53
+
 def check_potential_ring(image: cv2.typing.MatLike) -> bool:
     return get_circles(image) is not None
 
@@ -38,9 +40,25 @@ def point_per_layer(circle: cv2.typing.MatLike) -> list[tuple[int, int]]:
     x, y, r = circle
     points = []
     for i in range(5):
-        points.append([x, y - i * r // 5])
-        if i != 0:
-            points[i][1] -= r // 12  
+        point = [x, y - i * r // 4]
+        if i >= 4:
+            point[1] += r // 8
+        points.append(point)
+    for i in range(5):
+        point = [x, y + i * r // 4]
+        if i >= 4:
+            point[1] -= r // 8
+        points.append(point)
+    for i in range(5):
+        point = [x - i * r // 4, y]
+        if i >= 4:
+            point[0] += r // 8
+        points.append(point)
+    for i in range(5):
+        point = [x + i * r // 4, y]
+        if i >= 4:
+            point[0] -= r // 8
+        points.append(point)
     
     return points
 
@@ -50,7 +68,7 @@ def classify_color(
         more_color_ranges: dict[Color, tuple[tuple, tuple]]
 ) -> Color:
     "Will return the color corresponding to the correct range, -1 if black, else None"
-    if hsv_color[2] < 50: # checking for black
+    if hsv_color[2] <= BLACK_MAX_VALUE: # checking for black
         return Color.BLACK
     for color, (range_low, range_high) in chain(color_ranges.items(), more_color_ranges.items()):
         if np.all((hsv_color >= range_low) & (hsv_color <= range_high)):
@@ -75,20 +93,18 @@ def frames_get_colors(
         else:
             ring = max(ring, biggest_circle, key=lambda circle: circle[2])
     if ring is None:
-        print("error1")
         return None, None
     # For each layer, its color should be the color that was found in most frames
     points = point_per_layer(ring)
     layer_colors_counters = [Counter() for _ in range(5)]
     for frame in last_frames:
         for i, point in enumerate(points):
-            if point[1] > frame.shape[0] or point[0] > frame.shape[1]:
-                print("error2")
-                return None, None
+            if point[1] >= frame.shape[0] or point[0] >= frame.shape[1]:
+                continue
             hsv_pixel = cv2.cvtColor(frame[point[1], point[0]].reshape(1, 1, 3), cv2.COLOR_BGR2HSV)[0][0]
             color = classify_color(hsv_pixel, color_ranges, more_color_ranges)
             if color is not None:
-                layer_colors_counters[i][color] += 1
+                layer_colors_counters[i % 5][color] += 1
     layer_colors = []
     for i in range(5):
         if len(layer_colors_counters[i]) == 0:

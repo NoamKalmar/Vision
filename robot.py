@@ -9,6 +9,7 @@ import numpy as np
 from camera import Camera
 from serial_com import SerialCommunicator
 from map_display import MapDisplay
+import arduino_upload
 import letters
 import rings
 
@@ -63,7 +64,8 @@ class Robot:
         # Initalize a camera for each video capture
         self.cameras: list[Camera] = [left_camera, right_camera]
 
-        self.no_scan: bool = False  
+        self.no_scan: bool = False
+        self.last_victim_time: float = 0
         self.last_serial_check_time: int = 0
         
         # Relevant only for debug mode
@@ -97,18 +99,12 @@ class Robot:
             self.close()
 
     def loop_cycle(self) -> bool:
-        # for i, camera in enumerate(self.cameras):
-        # self.cameras[0].update_frame()
-        # letter, _ = letters.get_letter(self.cameras[0].frame, self.letters_config)
-        # print(letter)
-        # cv2.imshow("Vision", self.cameras[0].frame)
-        # return self.debug_loop()
         # Check serial connection and detect if needed
         if self.serial_com is not None:
-            if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
-                self.last_serial_check_time = time.time()
-                if not self.serial_com.check_connection():
-                    self.serial_com.try_connect()
+            # if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
+            #     self.last_serial_check_time = time.time()
+            if not self.serial_com.check_connection():
+                self.serial_com.try_connect()
             self.serial_com.read()
         # Check for victims and act accordingly
         for i, camera in enumerate(self.cameras):
@@ -122,18 +118,20 @@ class Robot:
                 continue
             if check_potential_victim(camera.frame, self.letters_config):
                 # Check if the minimal time between scans from the same camera has passed
-                if time.time() - camera.last_scan_time < self.time_between_scans:
+                if time.time() - self.last_victim_time < self.time_between_scans:
                     continue
                 # Sending a signal for the robot to stop
-                # self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
-                print(f"Starting a scan on camera index {i} in {self.time_to_stop} seconds")
+                self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 if self.serial_com is not None:
-                    is_ready = self.debug_wait_for_ready(5)
+                    is_ready = self.debug_wait_for_ready()
                     if not is_ready:
                         continue
                 # Starting a scan and acting upon the results
+                print(f"Starting a scan on camera index {i}")
                 camera.scan()
                 victim_status = self.get_victim_status(camera)
+                if victim_status != VictimStatus.FAKE:
+                    self.last_victim_time = time.time()
                 serial_error = self.handle_victim(i, victim_status, time.time())
                 if serial_error:
                     print("Serial Error: Trying to reconnect")
@@ -161,6 +159,11 @@ class Robot:
             self.cameras[self.debug_chosen_camera_index].on = not self.cameras[self.debug_chosen_camera_index].on
         elif key == ord("m"):
             self.debug_display_mode = "map"
+        elif key == ord("u"):
+            try:
+                arduino_upload.start()
+            except:
+                pass
         # If the key is a digit, then the debug frame should be the frame coming from the camera in that index
         try:
             if chr(key).isdigit():
@@ -185,15 +188,15 @@ class Robot:
             return status
         # If no letter was found, check for a ring
         colors, ring = rings.frames_get_colors(frames_buffer, self.color_ranges, self.more_color_ranges)
+        if ring is not None:
+            self.debug_ring = ring
+            self.debug_points = rings.point_per_layer(ring)
         if colors is not None:
             print(colors)
             health = rings.colors_to_health(colors)
             status = HEALTH_TO_STATUS.get(health)
             if status is not None:
                 return status
-        if ring is not None:
-            self.debug_ring = ring
-            self.debug_points = rings.point_per_layer(ring)
         # If neither a letter nor a ring were found, then return a fake status
         return VictimStatus.FAKE
 
@@ -220,8 +223,6 @@ class Robot:
         if camera is None or camera.error:
             return np.zeros((480, 480, 3))
         frame = camera.frame.copy()
-        status = f"{self.debug_chosen_camera_index}: On" if camera.on else f"{self.debug_chosen_camera_index}: Off"
-        cv2.putText(frame, status, (0, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, BLUE, 2, cv2.LINE_AA)
         # Threshold mode cannot work with the other modes
         if self.debug_threshold_mode:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -238,9 +239,11 @@ class Robot:
                 cv2.circle(frame, point, 1, WHITE, 3)
         if self.debug_chosen_contour is not None:
             cv2.drawContours(frame, [self.debug_chosen_contour], 0, GREEN, 3)
+        status = f"{self.debug_chosen_camera_index}: On" if camera.on else f"{self.debug_chosen_camera_index}: Off"
+        cv2.putText(frame, status, (0, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, BLUE, 2, cv2.LINE_AA)
         return frame
 
-    def debug_wait_for_ready(self, timeout: float = 5) -> bool:
+    def debug_wait_for_ready(self, timeout: float = 3) -> bool:
         start_time = time.time()
         while time.time() - start_time <= timeout:
             if self.serial_com is not None:
@@ -273,6 +276,7 @@ class Robot:
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
     contours = letters.get_contours(image, letters_config.binary_threshold)
     contours = letters.filter_contours_by_area(contours, letters_config.min_area)
+    contours = letters.filter_contours_by_ratio(contours, (0.5, 2.5))
     if len(contours) > 0:
         return True
     # if letters.check_potential_letter(image, letters_config):
