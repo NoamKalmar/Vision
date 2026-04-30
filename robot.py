@@ -285,8 +285,9 @@ class Robot:
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
     contours = letters.get_contours(image, letters_config.binary_threshold)
     contours = letters.filter_contours_by_area(contours, letters_config.min_area)
-    contours = letters.filter_contours_by_ratio(contours, (0.5, 2.5))
-    if len(contours) > 0:
+    contours = letters.filter_contours_by_ratio(contours, (0.5, 2.0))
+    if len(contours) > 0 and len(contours) < 5:
+        print("len", len(contours))
         return True
     # if letters.check_potential_letter(image, letters_config):
     #     return True
