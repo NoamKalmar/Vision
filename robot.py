@@ -101,6 +101,8 @@ class Robot:
 
     def loop_cycle(self) -> bool:
         # Check serial connection and detect if needed
+        if time.time() - self.last_victim_time > 30000:
+            self.serial_com.is_continue = True
         if self.serial_com is not None:
             # if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
             #     self.last_serial_check_time = time.time()
@@ -125,7 +127,7 @@ class Robot:
                 #     continue
                 # Sending a signal for the robot to stop
                 if self.serial_com is not None:
-                    if not self.serial_com.is_continue or time.time() - self.last_victim_time < 30000:
+                    if not self.serial_com.is_continue:
                         continue
                 self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 if self.serial_com is not None:
@@ -135,8 +137,6 @@ class Robot:
                 # Starting a scan and acting upon the results
                 print(f"Starting a scan on camera index {i}")
                 camera.scan()
-                # print(test.frames_get_colors(camera.frames_buffer))
-                # continue
                 victim_status = self.get_victim_status(camera)
                 if victim_status != VictimStatus.FAKE:
                     self.last_victim_time = time.time()
