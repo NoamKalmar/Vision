@@ -86,6 +86,7 @@ def is_match_valid(
     if match > min_valid:
         return False
     solidity = cv2.contourArea(contour) / cv2.contourArea(cv2.convexHull(contour))
+    print(solidity)
     if solidity_range is not None:
         if solidity < solidity_range[0] or solidity > solidity_range[1]:
             return False

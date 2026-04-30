@@ -12,6 +12,7 @@ from map_display import MapDisplay
 import arduino_upload
 import letters
 import rings
+import test
 
 
 class VictimStatus(Enum):
@@ -134,6 +135,8 @@ class Robot:
                 # Starting a scan and acting upon the results
                 print(f"Starting a scan on camera index {i}")
                 camera.scan()
+                # print(test.frames_get_colors(camera.frames_buffer))
+                # continue
                 victim_status = self.get_victim_status(camera)
                 if victim_status != VictimStatus.FAKE:
                     self.last_victim_time = time.time()
