@@ -195,16 +195,16 @@ class Robot:
             status = LETTER_TO_STATUS.get(letter)
             return status
         # If no letter was found, check for a ring
-        colors, ring = rings.frames_get_colors(frames_buffer, self.color_ranges, self.more_color_ranges)
-        if ring is not None:
-            self.debug_ring = ring
-            self.debug_points = rings.point_per_layer(ring)
-        if colors is not None:
-            print(colors)
-            health = rings.colors_to_health(colors)
-            status = HEALTH_TO_STATUS.get(health)
-            if status is not None:
-                return status
+        # colors, ring = rings.frames_get_colors(frames_buffer, self.color_ranges, self.more_color_ranges)
+        # if ring is not None:
+        #     self.debug_ring = ring
+        #     self.debug_points = rings.point_per_layer(ring)
+        # if colors is not None:
+        #     print(colors)
+        #     health = rings.colors_to_health(colors)
+        #     status = HEALTH_TO_STATUS.get(health)
+        #     if status is not None:
+        #         return status
         # If neither a letter nor a ring were found, then return a fake status
         return VictimStatus.FAKE
 
@@ -287,7 +287,7 @@ def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.Le
     contours = letters.filter_contours_by_area(contours, letters_config.min_area)
     contours = letters.filter_contours_by_ratio(contours, (0.5, 2.0))
     if len(contours) > 0 and len(contours) < 5:
-        print("len", len(contours))
+        # print("len", len(contours))
         return True
     # if letters.check_potential_letter(image, letters_config):
     #     return True
