@@ -84,6 +84,7 @@ class Robot:
     def loop(self) -> None:
         if self.serial_com is not None:
             self.serial_com.try_connect()
+        # self.debug_map_display.new_cell_info(18, 18, True, True, False, True)
         try:
             while True:
                 try:
@@ -102,11 +103,7 @@ class Robot:
     def loop_cycle(self) -> bool:
         # Check serial connection and detect if needed
         if self.serial_com is not None:
-            if time.time() - self.last_victim_time > 30000:
-                self.serial_com.is_continue = True
-            if not self.serial_com.check_connection():
-                self.serial_com.try_connect()
-            self.serial_com.read()
+            self.serial_loop()
         # Check for victims and act accor.dingly
         for i, camera in enumerate(self.cameras):
             if camera is None:
@@ -119,32 +116,34 @@ class Robot:
                 continue
             if check_potential_victim(camera.frame, self.letters_config):
                 # Check if the minimal time between scans from the same camera has passed
-                # if time.time() - self.last_victim_time < self.time_between_scans:
-                #     continue
-                # Sending a signal for the robot to stop
-                if self.serial_com is not None:
-                    if not self.serial_com.is_continue:
-                        continue
-                self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
-                if self.serial_com is not None:
-                    is_ready = self.debug_wait_for_ready()
-                    if not is_ready:
-                        continue
+                if time.time() - self.last_victim_time < self.time_between_scans:
+                    continue
                 # Starting a scan and acting upon the results
                 print(f"Starting a scan on camera index {i}")
                 camera.scan()
                 victim_status = self.get_victim_status(camera)
                 if victim_status != VictimStatus.FAKE:
                     self.last_victim_time = time.time()
-                serial_error = self.handle_victim(i, victim_status, time.time())
-                if serial_error:
-                    print("Serial Error: Trying to reconnect")
-                    self.serial_com.try_connect()
+                    serial_error = self.handle_victim(i, victim_status)
+                    if serial_error:
+                        print("Serial Error: Trying to reconnect")
+                        self.serial_com.try_connect()
 
         if self.debug_mode:
             return self.debug_loop()
 
         return False
+
+    def serial_loop(self) -> None:
+        if not self.serial_com.check_connection():
+            self.serial_com.try_connect()
+        self.serial_com.read()
+        if self.serial_com.got_start_message():
+            self.debug_map_display.reset_map()
+        map_data = self.serial_com.get_map_data()
+        if map_data is not None:
+            x, y, left, right, top, bottom = map_data
+            self.debug_map_display.new_cell_info(x, y, left, right, top, bottom)
 
     def debug_loop(self) -> bool:
         # Returns whether the user wants to quit
@@ -206,12 +205,12 @@ class Robot:
         return VictimStatus.FAKE
 
 
-    def handle_victim(self, camera_index: int, status: VictimStatus, time_of_detection: float) -> bool:
+    def handle_victim(self, camera_index: int, status: VictimStatus) -> bool:
         # Returns wether the message was sent successfully
         print(f"Handling victim of status {status} coming from camera {camera_index}")
         if self.serial_com is None:
             return False
-        error = self.serial_com.send_victim_message(camera_index, status.value, time_of_detection)
+        error = self.serial_com.send_victim_message(camera_index, status.value)
         return error
 
     def get_debug_image(self) -> cv2.typing.MatLike:

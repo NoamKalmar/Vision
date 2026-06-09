@@ -3,12 +3,7 @@ import serial
 from serial.tools.list_ports import comports
 
 START_MESSAGE = "START"
-READY_MESSAGE = "READY"
-CONTINUE_MESSAGE = "CONTINUE"
-ENABLE_RIGHT_MESSAGE = "ENABLE_RIGHT"
-ENABLE_LEFT_MESSAGE = "ENABLE_LEFT"
-DISABLE_RIGHT_MESSAGE = "DISABLE_RIGHT"
-DISABLE_LEFT_MESSAGE = "DISABLE_LEFT"
+MAP_MESSAGE = "map"
 
 
 class SerialCommunicator:
@@ -17,11 +12,8 @@ class SerialCommunicator:
         self.baudrate = baudrate
         self.serial_com: serial.Serial | None = None
 
-        self.start_time: float | None = None
-        self.is_ready = False
-        self.is_continue = True
-        self.is_left_enabled = True
-        self.is_right_enabled = True
+        self.got_start = False
+        self.map_data: tuple[int, int, bool, bool, bool, bool] | None = None
 
     def connect(self, port: str) -> bool:
         # Returns whether there was and error
@@ -68,7 +60,7 @@ class SerialCommunicator:
                 return True
         return False
     
-    def send_victim_message(self, camera_index: int, victim_value: int, time_of_detection: float) -> bool:
+    def send_victim_message(self, camera_index: int, victim_value: int) -> bool:
         """Message format:
         <camera_index>:<victim_value>:<(time_of_detection - start_time) (round to 1 decimal point) * 1000>:
         Returns whether there was an error
@@ -76,10 +68,10 @@ class SerialCommunicator:
         # if self.start_time == None:
         #     print("Error while trying to send message: START message have not been sent yet")
         #     return
-        # message = f"{camera_index}:{victim_value}:{int(round((time_of_detection - self.start_time) * 1000, -2))}:"
-        message = f"{camera_index}:{victim_value}:0:"
+        # message = f"{camera_index}:{victim_values}:"
+        message = f"{camera_index}:{victim_value}:"
         
-        print(message)
+        print(f"Sending: {message}")
         try:
             self.serial_com.write(bytes(message, "utf-8"))
         except serial.SerialException:
@@ -91,35 +83,29 @@ class SerialCommunicator:
             return
         data = self.serial_com.readline().decode("utf-8").strip()
         print(f"Serial data: {data}")
-        # if self.start_time is not None:
-        #     print((time() - self.start_time) * 1000 - int(data))
         if START_MESSAGE in data:
             print(f"Got {START_MESSAGE} message")
-            self.start_time = time()
-            self.is_continue = True
-        elif READY_MESSAGE in data:
-            print(f"Got {READY_MESSAGE} message")
-            self.is_ready = True
-            self.is_continue = False
-        elif CONTINUE_MESSAGE in data:
-            print(f"Got {CONTINUE_MESSAGE} message")
-            self.is_continue = True
-        elif ENABLE_LEFT_MESSAGE in data:
-            print(f"Got {ENABLE_LEFT_MESSAGE} message")
-            self.is_enable_left = True
-        elif ENABLE_RIGHT_MESSAGE in data:
-            print(f"Got {ENABLE_RIGHT_MESSAGE} message")
-            self.is_enable_right = True
-        elif DISABLE_LEFT_MESSAGE in data:
-            print(f"Got {DISABLE_LEFT_MESSAGE} message")
-            self.is_left_enabled = False
-        elif DISABLE_RIGHT_MESSAGE in data:
-            print(f"Got {DISABLE_RIGHT_MESSAGE} message")
-            self.is_right_enabled = False
+            self.got_start = True
+        if MAP_MESSAGE in data:
+            # e.g. map:20:20:0:0:0:0:
+            map_data = tuple(data.split(":")[1:-1])
+            map_data = [int(x) for x in map_data]
+            for i in range(2, 6):
+                map_data[i] = bool(map_data[i])
+            self.map_data = map_data
 
-    def got_ready(self) -> bool:
-        if self.is_ready:
-            self.is_ready = False
+    def get_map_data(
+            self
+    ) -> tuple[int, int, bool, bool, bool, bool] | None:
+        if self.map_data is not None:
+            map_data = self.map_data
+            self.map_data = None
+            return map_data
+        return None
+    
+    def got_start_message(self) -> bool:
+        if self.got_start:
+            self.got_start = False
             return True
         return False
 

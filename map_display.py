@@ -7,25 +7,30 @@ GRAY = (20, 20, 20)
 WHITE = (255, 255, 255)
 
 class MapDisplay:
-    def __init__(self, map_length: int = 40, map_window_size: int = 600) -> None:
+    def __init__(self, map_length: int = 36, map_window_size: int = 600) -> None:
         self.map_length = map_length
         self.map_size = map_window_size
         self.cell_size = map_window_size // map_length
         self.map_image = np.zeros((map_window_size, map_window_size, 3), dtype=np.uint8)
 
-        self.robot_x: int = 20
-        self.robot_y: int = 20
-        self.move_robot(self.robot_x, self.robot_y)
+        self.robot_x: int = map_length // 2
+        self.robot_y: int = map_length // 2
 
         self.horizontal_lines = ([False for _ in range(self.map_size)] for _ in range(self.map_size + 1))
         self.vertical_lines = ([False for _ in range(self.map_size + 1)] for _ in range(self.map_size))
         for y in range(self.map_size):
             for x in range(self.map_size):
                 self.draw_cell_lines(x, y, False, False, False, False)
+        
+        self.default_map_image = self.map_image.copy()
+
+    def reset_map(self) -> None:
+        self.map_image = self.default_map_image.copy()
 
     def new_cell_info(self, x: int, y: int, left: bool, right: bool, top: bool, bottom: bool) -> None:
-        self.move_robot(x, y)
-        self.draw_cell_lines(x, y, left, right, top, bottom)
+        # y is expected to be from bottom to top as input to this function
+        self.move_robot(x, self.map_length - y)
+        self.draw_cell_lines(x, self.map_length - y, left, right, top, bottom)
 
     def move_robot(self, x: int, y: int) -> None:
         # Remove the robot from the last cell
