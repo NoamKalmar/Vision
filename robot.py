@@ -101,16 +101,12 @@ class Robot:
 
     def loop_cycle(self) -> bool:
         # Check serial connection and detect if needed
-        if time.time() - self.last_victim_time > 30000:
-            self.serial_com.is_continue = True
         if self.serial_com is not None:
-            # if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
-            #     self.last_serial_check_time = time.time()
+            if time.time() - self.last_victim_time > 30000:
+                self.serial_com.is_continue = True
             if not self.serial_com.check_connection():
                 self.serial_com.try_connect()
             self.serial_com.read()
-            # self.cameras[0].on = self.serial_com.is_left_enabled
-            # self.cameras[1].on = self.serial_com.is_right_enabled
         # Check for victims and act accor.dingly
         for i, camera in enumerate(self.cameras):
             if camera is None:
@@ -152,6 +148,7 @@ class Robot:
 
     def debug_loop(self) -> bool:
         # Returns whether the user wants to quit
+        cv2.namedWindow(self.name, cv2.WINDOW_AUTOSIZE)
         cv2.imshow(self.name, self.get_debug_image())
 
         key = cv2.waitKey(1)
