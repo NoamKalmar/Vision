@@ -16,7 +16,7 @@ IMAGE_PATHS = {Letter.PHI: "assets/phi.png",
                Letter.OMEGA: "assets/omega.png"}
 
 MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 3.0}
-NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.89, 0.94), Letter.PSI: (0.36, 0.45), Letter.OMEGA: (0.32, 0.41)}
+NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.89, 0.96), Letter.PSI: (0.45, 0.51), Letter.OMEGA: (0.37, 0.45)}
 
 BINARY_THRESHOLD = 100
 

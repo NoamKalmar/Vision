@@ -12,6 +12,7 @@ from map_display import MapDisplay
 import arduino_upload
 import letters
 import rings
+import test
 
 
 class VictimStatus(Enum):
@@ -100,6 +101,8 @@ class Robot:
 
     def loop_cycle(self) -> bool:
         # Check serial connection and detect if needed
+        if time.time() - self.last_victim_time > 30000:
+            self.serial_com.is_continue = True
         if self.serial_com is not None:
             # if time.time() - self.last_serial_check_time > TIME_BETWEEN_SERIAL_CONNECTION_CHECKS:
             #     self.last_serial_check_time = time.time()
@@ -124,7 +127,7 @@ class Robot:
                 #     continue
                 # Sending a signal for the robot to stop
                 if self.serial_com is not None:
-                    if not self.serial_com.is_continue or time.time() - self.last_victim_time < 30000:
+                    if not self.serial_com.is_continue:
                         continue
                 self.handle_victim(i, VictimStatus.POTENTIAL, time.time())
                 if self.serial_com is not None:
@@ -192,16 +195,16 @@ class Robot:
             status = LETTER_TO_STATUS.get(letter)
             return status
         # If no letter was found, check for a ring
-        colors, ring = rings.frames_get_colors(frames_buffer, self.color_ranges, self.more_color_ranges)
-        if ring is not None:
-            self.debug_ring = ring
-            self.debug_points = rings.point_per_layer(ring)
-        if colors is not None:
-            print(colors)
-            health = rings.colors_to_health(colors)
-            status = HEALTH_TO_STATUS.get(health)
-            if status is not None:
-                return status
+        # colors, ring = rings.frames_get_colors(frames_buffer, self.color_ranges, self.more_color_ranges)
+        # if ring is not None:
+        #     self.debug_ring = ring
+        #     self.debug_points = rings.point_per_layer(ring)
+        # if colors is not None:
+        #     print(colors)
+        #     health = rings.colors_to_health(colors)
+        #     status = HEALTH_TO_STATUS.get(health)
+        #     if status is not None:
+        #         return status
         # If neither a letter nor a ring were found, then return a fake status
         return VictimStatus.FAKE
 
@@ -282,8 +285,9 @@ class Robot:
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
     contours = letters.get_contours(image, letters_config.binary_threshold)
     contours = letters.filter_contours_by_area(contours, letters_config.min_area)
-    contours = letters.filter_contours_by_ratio(contours, (0.5, 2.5))
-    if len(contours) > 0:
+    contours = letters.filter_contours_by_ratio(contours, (0.5, 2.0))
+    if len(contours) > 0 and len(contours) < 5:
+        # print("len", len(contours))
         return True
     # if letters.check_potential_letter(image, letters_config):
     #     return True
