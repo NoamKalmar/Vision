@@ -1,15 +1,17 @@
 import cv2
+import numpy as np
 import platform
-from letters import get_contours
+from letters import get_contours, filter_contours_by_area
 
 ASSETS_PATH = "assets"
 VIDEO_CAPTURE_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
 
 BINARY_THRESHOLD = 100
+MIN_AREA = 800
 
 GREEN = (0, 255, 0)
 
-def capture_template(cap_index: int, img_output_path: str) -> None:
+def capture_template(cap_index: int, output_path: str) -> None:
     cap = cv2.VideoCapture(cap_index, VIDEO_CAPTURE_API)
     captured_frame: cv2.typing.MatLike | None = None
     print("Press 'c' to capture")
@@ -18,9 +20,11 @@ def capture_template(cap_index: int, img_output_path: str) -> None:
         if not ok:
             print("error reading from camera")
             return
+        frame_copy = frame.copy()
         contours = get_contours(frame, BINARY_THRESHOLD)
-        cv2.drawContours(frame, contours, -1, GREEN, 3)
-        cv2.imshow("Vision Template Calibration", frame)
+        contours = filter_contours_by_area(contours, MIN_AREA)
+        cv2.drawContours(frame_copy, contours, -1, GREEN, 3)
+        cv2.imshow("Vision Template Calibration", frame_copy)
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
@@ -30,7 +34,8 @@ def capture_template(cap_index: int, img_output_path: str) -> None:
             elif len(contours) > 1:
                 print("Invalid: More than one contour was found")
             else:
-                cv2.imwrite(img_output_path, frame)
+                np.save(output_path, contours[0])
+                # cv2.imwrite(img_output_path, frame)
                 break
     cap.release()
     cv2.destroyAllWindows()
@@ -43,11 +48,11 @@ def templates_menu() -> None:
     cap_index = int(input("Enter video capture index: "))
     path = f"{ASSETS_PATH}/"
     if letter == "1":
-        path += "phi.png"
+        path += "phi.npy"
     elif letter == "2":
-        path += "psi.png"
+        path += "psi.npy"
     elif letter == "3":
-        path += "omega.png"
+        path += "omega.npy"
     capture_template(cap_index, path)
 
 def main() -> None:

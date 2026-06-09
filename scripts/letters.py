@@ -35,10 +35,14 @@ def get_contours(image: cv2.typing.MatLike, binary_threshold: int) -> Sequence[c
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def get_template_contours(template_paths: dict[int, set]) -> dict[int, Sequence[cv2.typing.MatLike]]:
+def get_template_contours(image_paths: dict[int, cv2.typing.MatLike], binary_threshold: int) -> dict[int, Sequence[cv2.typing.MatLike]]:
     contours = {}
-    for template_key, path in template_paths.items():
-        contours[template_key] = np.load(path)
+    for template_key, path in image_paths.items():
+        image = cv2.imread(path)
+        letter_contours = get_contours(image, binary_threshold)
+        if len(letter_contours) != 1:
+            raise Exception(f"Found more than one contour in the image at path {path}")
+        contours[template_key] = letter_contours[0]
     return contours
 
 def filter_contours_by_ratio(contours: Sequence[cv2.typing.MatLike], valid_range: tuple[float, float]) -> Sequence[cv2.typing.MatLike]:

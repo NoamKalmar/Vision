@@ -8,12 +8,9 @@ from letters import Letter, LettersConfig, get_template_contours
 from rings import Color
 from robot import Robot
 
-PHI_PATH = "assets/phi.png"
-PSI_PATH = "assets/psi.png"
-OMEGA_PATH = "assets/omega.png"
-IMAGE_PATHS = {Letter.PHI: "assets/phi.png", 
-               Letter.PSI: "assets/psi.png", 
-               Letter.OMEGA: "assets/omega.png"}
+TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy", 
+               Letter.PSI: "assets/psi.npy", 
+               Letter.OMEGA: "assets/omega.npy"}
 
 MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 3.0}
 NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.89, 0.96), Letter.PSI: (0.45, 0.51), Letter.OMEGA: (0.37, 0.45)}
@@ -76,7 +73,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    templates = get_template_contours(IMAGE_PATHS, BINARY_THRESHOLD)
+    templates = get_template_contours(TEMPLATE_PATHS)
     letters_config = LettersConfig(
         templates=templates,
         binary_threshold=BINARY_THRESHOLD,
