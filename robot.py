@@ -217,13 +217,15 @@ class Robot:
         if self.debug_display_mode == "map":
             return self.debug_map_display.map_image
         elif self.debug_display_mode == "camera":
-            return self.get_debug_camera_image()
-        return np.zeros((480, 480, 3))
+            # return self.get_debug_camera_image()
+            camera_frames = np.hstack((self.get_debug_camera_image(0), self.get_debug_camera_image(1)))
+            return camera_frames
+        return
     
-    def get_debug_camera_image(self) -> cv2.typing.MatLike:
+    def get_debug_camera_image(self, camera_index: int) -> cv2.typing.MatLike:
         if len(self.cameras) == 0:
             return np.zeros((480, 480, 3))
-        camera = self.cameras[self.debug_chosen_camera_index]
+        camera = self.cameras[camera_index]
         if camera is None or camera.error:
             return np.zeros((480, 480, 3))
         frame = camera.frame.copy()

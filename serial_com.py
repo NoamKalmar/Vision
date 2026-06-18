@@ -89,6 +89,8 @@ class SerialCommunicator:
         if MAP_MESSAGE in data:
             # e.g. map:20:20:0:0:0:0:
             map_data = tuple(data.split(":")[1:-1])
+            if len(map_data) != 6:
+                return
             map_data = [int(x) for x in map_data]
             for i in range(2, 6):
                 map_data[i] = bool(map_data[i])
