@@ -13,11 +13,11 @@ TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy",
                Letter.OMEGA: "assets/omega.npy"}
 
 MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 3.0}
-NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.89, 0.96), Letter.PSI: (0.45, 0.51), Letter.OMEGA: (0.37, 0.45)}
+NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.94), Letter.PSI: (0.42, 0.48), Letter.OMEGA: (0.38, 0.42)}
 
 BINARY_THRESHOLD = 100
 
-NUM_SCAN_FRAMES = 20
+NUM_SCAN_FRAMES = 1000
 
 COLOR_RANGES = {
     Color.RED: ((0, 120, 70), (10, 255, 255)),
@@ -29,7 +29,9 @@ COLOR_RANGES = {
 MORE_COLOR_RANGES = {Color.RED: ((170, 120, 70), (179, 255, 255))}
 
 ROBOT_STOP_TIME = 5
-TIME_BETWEEN_SCANS = 10
+TIME_BETWEEN_SCANS = 25
+
+AREA_RANGE = (1500, 9000)
 
 RIGHT_CAP_INDEX = 0
 LEFT_CAP_INDEX = 2
@@ -77,7 +79,7 @@ def main() -> None:
     letters_config = LettersConfig(
         templates=templates,
         binary_threshold=BINARY_THRESHOLD,
-        min_area=800,
+        area_range=AREA_RANGE,
         min_matches=MIN_MATCHES,
         normal_width_to_height_range=(0.5, 1.5),
         normal_solidity_range_for_letter=NORMAL_SOLIDITY_RANGES

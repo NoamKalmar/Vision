@@ -16,11 +16,10 @@ import test
 
 
 class VictimStatus(Enum):
-    POTENTIAL = 0
-    HARMED = 1
-    UNHARMED = 2
-    STABLE = 3
-    FAKE = 4
+    STABLE = 0
+    UNHARMED = 1
+    HARMED = 2
+    FAKE = 3
 
 HEALTH_TO_STATUS = {2: VictimStatus.HARMED, 1: VictimStatus.UNHARMED, 0: VictimStatus.STABLE}
 LETTER_TO_STATUS = {
@@ -39,7 +38,7 @@ TIME_BETWEEN_SERIAL_CONNECTION_CHECKS = 5
 LOWER_WHITE = np.array([0, 0, 160])
 UPPER_WHITE = np.array([180, 60, 255])
 
-BLACK_FRAME = np.zeros((240, 320, 3))
+BLACK_FRAME = np.zeros((480, 480, 3))
 
 class Robot:
     def __init__(
@@ -67,13 +66,11 @@ class Robot:
         # Initalize a camera for each video capture
         self.cameras: list[Camera] = [left_camera, right_camera]
 
-        self.no_scan: bool = False
         self.last_victim_time: float = 0
-        self.last_serial_check_time: int = 0
+        self.waiting_cameras: list[int] = []
         
         # Relevant only for debug mode
         if self.debug_mode:
-            self.debug_display_mode: Literal["camera", "map"] = "camera"
             self.debug_window_title: str = ""
             self.debug_map_display: MapDisplay = MapDisplay()
             self.debug_chosen_camera_index: int = 0
@@ -106,30 +103,13 @@ class Robot:
         # Check serial connection and detect if needed
         if self.serial_com is not None:
             self.serial_loop()
-        # Check for victims and act accor.dingly
-        for i, camera in enumerate(self.cameras):
-            if camera is None:
-                continue
-            camera.update_frame()
-            if camera.error:
-                print(f"Error while reading from camera index {i}")
-                continue
-            if not camera.on:
-                continue
-            if check_potential_victim(camera.frame, self.letters_config):
-                # Check if the minimal time between scans from the same camera has passed
-                if time.time() - self.last_victim_time < self.time_between_scans:
-                    continue
-                # Starting a scan and acting upon the results
-                print(f"Starting a scan on camera index {i}")
-                camera.scan()
-                victim_status = self.get_victim_status(camera)
-                if victim_status != VictimStatus.FAKE:
-                    self.last_victim_time = time.time()
-                    serial_error = self.handle_victim(i, victim_status)
-                    if serial_error:
-                        print("Serial Error: Trying to reconnect")
-                        self.serial_com.try_connect()
+        if time.time() - self.last_victim_time > self.time_between_scans:
+            self.continue_cameras()
+        # Check for victims and act accordingly
+        for i in range(len(self.cameras)):
+            if self.cameras[i] is not None:
+                self.cameras[i].update_frame()
+                self.check_and_handle_victim(i)
 
         if self.debug_mode:
             return self.debug_loop()
@@ -141,16 +121,46 @@ class Robot:
             self.serial_com.try_connect()
         self.serial_com.read()
         if self.serial_com.got_start_message():
+            self.continue_cameras()
             self.debug_map_display.reset_map()
+        if self.serial_com.got_continue_message():
+            self.continue_cameras()
         map_data = self.serial_com.get_map_data()
         if map_data is not None:
             x, y, left, right, top, bottom = map_data
             self.debug_map_display.new_cell_info(x, y, left, right, top, bottom)
 
+    def check_and_handle_victim(self, camera_index: int) -> None:
+        camera = self.cameras[camera_index]
+        if camera is None:
+            return
+        if camera.error:
+            print(f"Error while reading from camera index {camera_index}")
+            return
+        if not camera.on:
+            return
+        if check_potential_victim(camera.frame, self.letters_config):
+            # Starting a scan and acting upon the results
+            print(f"Starting a scan on camera index {camera_index}")
+            camera.scan()
+            victim_status = self.get_victim_status(camera)
+            if victim_status != VictimStatus.FAKE:
+                camera.on = False
+                self.waiting_cameras.append(camera_index)
+                self.last_victim_time = time.time()
+                serial_error = self.handle_victim(camera_index, victim_status)
+                if serial_error:
+                    print("Serial Error: Trying to reconnect")
+                    self.serial_com.try_connect()
+
+    def continue_cameras(self) -> None:
+        for camera_index in self.waiting_cameras:
+            self.cameras[camera_index].on = True
+        self.waiting_cameras = []
+
     def debug_loop(self) -> bool:
         # Returns whether the user wants to quit
-        cv2.namedWindow(self.name, cv2.WINDOW_AUTOSIZE)
-        cv2.imshow(self.name, self.get_debug_image())
+        self.display_debug()
 
         key = cv2.waitKey(1)
         if key == ord("q"):
@@ -163,8 +173,6 @@ class Robot:
             self.debug_contours_mode = not self.debug_contours_mode
         elif key == ord("o"):
             self.cameras[self.debug_chosen_camera_index].on = not self.cameras[self.debug_chosen_camera_index].on
-        elif key == ord("m"):
-            self.debug_display_mode = "map"
         elif key == ord("u"):
             try:
                 arduino_upload.start()
@@ -174,9 +182,8 @@ class Robot:
         try:
             if chr(key).isdigit():
                 index = int(chr(key))
-                if index < len(self.cameras):   
+                if index < len(self.cameras):
                     self.debug_chosen_camera_index = index
-                self.debug_display_mode = "camera"
         except ValueError:
             pass
 
@@ -215,14 +222,12 @@ class Robot:
         error = self.serial_com.send_victim_message(camera_index, status.value)
         return error
 
-    def get_debug_image(self) -> cv2.typing.MatLike:
-        if self.debug_display_mode == "map":
-            return self.debug_map_display.map_image
-        elif self.debug_display_mode == "camera":
-            # frames = np.hstack((self.get_debug_camera_image(0), self.get_debug_camera_image(1)))
-            # return frames
-            return self.get_debug_camera_image(self.debug_chosen_camera_index)
-        return
+    def display_debug(self) -> cv2.typing.MatLike:
+        cv2.imshow("Map", self.debug_map_display.map_image)
+        if self.cameras[0] is not None:
+            cv2.imshow("Left Camera", self.get_debug_camera_image(0))
+        if self.cameras[1] is not None:
+            cv2.imshow("Right Camera", self.get_debug_camera_image(1))
     
     def get_debug_camera_image(self, camera_index: int) -> cv2.typing.MatLike:
         if len(self.cameras) == 0:
@@ -247,25 +252,13 @@ class Robot:
         if self.debug_points is not None:
             for point in self.debug_points:
                 cv2.circle(frame, point, 1, WHITE, 3)
-        if self.debug_chosen_contour is not None:
-            cv2.drawContours(frame, [self.debug_chosen_contour], 0, GREEN, 3)
-        status = f"{self.debug_chosen_camera_index}: On" if camera.on else f"{self.debug_chosen_camera_index}: Off"
+        if self.debug_chosen_contour is not None and len(self.waiting_cameras) != 0:
+            if camera_index == self.waiting_cameras[-1]:
+                cv2.drawContours(frame, [self.debug_chosen_contour], 0, GREEN, 3)
+        status = f"{camera_index}: On" if camera.on else f"{camera_index}: Off"
         cv2.putText(frame, status, (0, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, BLUE, 2, cv2.LINE_AA)
-        return frame
 
-    def debug_wait_for_ready(self, timeout: float = 3) -> bool:
-        start_time = time.time()
-        while time.time() - start_time <= timeout:
-            if self.serial_com is not None:
-                self.serial_com.read()
-                if self.serial_com.got_ready():
-                    return True
-            for camera in self.cameras:
-                if camera is not None:
-                    camera.update_frame()
-            if self.debug_mode:            
-                self.debug_loop()
-        return False
+        return frame
 
     def clear_debug(self) -> None:
         self.debug_ring = None
@@ -286,7 +279,7 @@ class Robot:
 
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
     contours = letters.get_contours(image, letters_config.binary_threshold)
-    contours = letters.filter_contours_by_area(contours, letters_config.min_area)
+    contours = letters.filter_contours_by_area(contours, letters_config.area_range)
     contours = letters.filter_contours_by_ratio(contours, (0.5, 2.0))
     if len(contours) > 0 and len(contours) < 5:
         # print("len", len(contours))

@@ -2,9 +2,9 @@ from time import sleep, time
 import serial
 from serial.tools.list_ports import comports
 
-START_MESSAGE = "START"
+START_MESSAGE = "START_ALL"
+CONTINUE_MESSAGE = "CONTINUE"
 MAP_MESSAGE = "map"
-
 
 class SerialCommunicator:
     def __init__(self, default_port: str | None = None, baudrate: int = 9600) -> None:
@@ -13,6 +13,7 @@ class SerialCommunicator:
         self.serial_com: serial.Serial | None = None
 
         self.got_start = False
+        self.got_continue = False
         self.map_data: tuple[int, int, bool, bool, bool, bool] | None = None
 
     def connect(self, port: str) -> bool:
@@ -81,12 +82,18 @@ class SerialCommunicator:
     def read(self) -> None:
         if self.serial_com.in_waiting <= 0:
             return
-        data = self.serial_com.readline().decode("utf-8").strip()
+        try:
+            data = self.serial_com.readline().decode("utf-8").strip()
+        except UnicodeDecodeError:
+            return
         print(f"Serial data: {data}")
         if START_MESSAGE in data:
             print(f"Got {START_MESSAGE} message")
             self.got_start = True
-        if MAP_MESSAGE in data:
+        elif CONTINUE_MESSAGE in data:
+            print(f"Got {CONTINUE_MESSAGE} message")
+            self.got_continue = True
+        elif MAP_MESSAGE in data:
             # e.g. map:20:20:0:0:0:0:
             map_data = tuple(data.split(":")[1:-1])
             if len(map_data) != 6:
@@ -108,6 +115,12 @@ class SerialCommunicator:
     def got_start_message(self) -> bool:
         if self.got_start:
             self.got_start = False
+            return True
+        return False
+    
+    def got_continue_message(self) -> bool:
+        if self.got_continue:
+            self.got_continue = False
             return True
         return False
 

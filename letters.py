@@ -13,7 +13,7 @@ MORPH_KERNEL1 = np.ones((5, 5), np.uint8)
 class LettersConfig:
     templates: dict[int, cv2.typing.MatLike] # letter to template (contour). can get by using get_contour_template
     binary_threshold: int = 75 # max value for a pixel to be considered as black (0 is black, 255 is white)
-    min_area: float | None = None # for all letters
+    area_range: tuple[int, int] | None = None # for all letters
     min_matches: dict[int, float] | None = None # letter to min match for that letter
     normal_width_to_height_range: tuple[float, float] | None = None # for all letters 
     normal_solidity_range_for_letter: dict[int, tuple[float, float]] | None = None # for each letter
@@ -50,11 +50,11 @@ def filter_contours_by_ratio(contours: Sequence[cv2.typing.MatLike], valid_range
             filtered_contours.append(contour)
     return filtered_contours
 
-def filter_contours_by_area(contours: Sequence[cv2.typing.MatLike], min_area: int) -> Sequence[cv2.typing.MatLike]:
+def filter_contours_by_area(contours: Sequence[cv2.typing.MatLike], area_range: tuple[int, int]) -> Sequence[cv2.typing.MatLike]:
     filtered_contours = []
     for contour in contours:
         area = cv2.contourArea(contour)
-        if area > min_area:
+        if area >= area_range[0] and area <= area_range[1]:
             filtered_contours.append(contour)
     return filtered_contours
 
@@ -95,8 +95,8 @@ def get_letter(
     contours = get_contours(frame, config.binary_threshold)
     if config.normal_width_to_height_range is not None:
         contours = filter_contours_by_ratio(contours, config.normal_width_to_height_range)
-    if config.min_area is not None:
-        contours = filter_contours_by_area(contours, config.min_area)
+    if config.area_range is not None:
+        contours = filter_contours_by_area(contours, config.area_range)
     matches, best_contours = check_for_templates(contours, config.templates)
     # print(matches)
     sorted_matches = sorted(matches.items(), key=lambda match: match[1])
