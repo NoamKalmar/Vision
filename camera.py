@@ -2,8 +2,12 @@ import time
 import platform
 
 import cv2
+import numpy as np
 
 CAP_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
+
+WIDTH = 320
+HEIGHT = 240
 
 class Camera:
     def __init__(self, cap_index: int, num_scan_frames: int, flip: bool = False) -> None:
@@ -11,8 +15,8 @@ class Camera:
         self.num_scan_frames = num_scan_frames
         self.flip = flip
         self.cap = cv2.VideoCapture(cap_index, CAP_API)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
         self.on: bool = True
         self.error: bool = False
         self.frame: cv2.typing.MatLike | None = None
@@ -22,9 +26,12 @@ class Camera:
 
     def update_frame(self) -> None:
         ret, self.frame = self.cap.read()
-        if ret and self.flip:
-            self.frame = cv2.flip(self.frame, -1)
         self.error = not ret
+        if not self.error:
+            if self.flip:
+                self.frame = cv2.flip(self.frame, -1)
+        # else:
+        #     self.frame = np.zeros((WIDTH, HEIGHT, 3)) 
     
     def scan(self) -> None:
         self.frames_buffer = []

@@ -39,6 +39,8 @@ TIME_BETWEEN_SERIAL_CONNECTION_CHECKS = 5
 LOWER_WHITE = np.array([0, 0, 160])
 UPPER_WHITE = np.array([180, 60, 255])
 
+BLACK_FRAME = np.zeros((240, 320, 3))
+
 class Robot:
     def __init__(
             self,
@@ -217,18 +219,20 @@ class Robot:
         if self.debug_display_mode == "map":
             return self.debug_map_display.map_image
         elif self.debug_display_mode == "camera":
-            # return self.get_debug_camera_image()
-            camera_frames = np.hstack((self.get_debug_camera_image(0), self.get_debug_camera_image(1)))
-            return camera_frames
+            # frames = np.hstack((self.get_debug_camera_image(0), self.get_debug_camera_image(1)))
+            # return frames
+            return self.get_debug_camera_image(self.debug_chosen_camera_index)
         return
     
     def get_debug_camera_image(self, camera_index: int) -> cv2.typing.MatLike:
         if len(self.cameras) == 0:
-            return np.zeros((480, 480, 3))
+            return BLACK_FRAME
         camera = self.cameras[camera_index]
         if camera is None or camera.error:
-            return np.zeros((480, 480, 3))
+            return BLACK_FRAME
+        
         frame = camera.frame.copy()
+
         # Threshold mode cannot work with the other modes
         if self.debug_threshold_mode:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
