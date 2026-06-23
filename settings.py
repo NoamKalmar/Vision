@@ -3,12 +3,13 @@ import numpy as np
 import platform
 from letters import get_contours, filter_contours_by_area, filter_contours_by_ratio
 from camera import Camera
+from rings import get_circle_contours
 
 ASSETS_PATH = "assets"
 VIDEO_CAPTURE_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
 
 BINARY_THRESHOLD = 100
-AREA_RANGE = (500, 10000)
+AREA_RANGE = (500, 15000)
 
 GREEN = (0, 255, 0)
 
@@ -56,7 +57,7 @@ def templates_menu() -> None:
         path += "omega.npy"
     capture_template(cap_index, path)
 
-def conours_stats_calibration() -> None:
+def contours_calibration() -> None:
     cap_index = int(input("Enter video capture index: "))
     camera = Camera(cap_index)
     while camera.cap.isOpened():
@@ -73,7 +74,7 @@ def conours_stats_calibration() -> None:
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
-        if key == ord("c"):
+        elif key == ord("c"):
             if len(contours) == 0:
                 print("Invalid: Found 0 contours")
             elif len(contours) > 1:
@@ -84,17 +85,37 @@ def conours_stats_calibration() -> None:
                 solidity = area / cv2.contourArea(cv2.convexHull(contour))
                 _, _, w, h = cv2.boundingRect(contour)
                 arc_length = cv2.arcLength(contour, True)
-                print(f"area: {area}, solidity: {solidity}, w-h-ratio: {w / h}, arc length: {arc_length}")
+                circularity = 4 * np.pi * area / (arc_length ** 2)
+                print(f"area: {area}, solidity: {solidity}, w-h-ratio: {w / h}, arc length: {arc_length}, circularity: {circularity}")
+
+def circles_calibration() -> None:
+    cap_index = int(input("Enter video capture index: "))
+    camera = Camera(cap_index)
+    while camera.cap.isOpened():
+        camera.update_frame()
+        if camera.error:
+            print("error reading from camera")
+            return
+        contours = get_circle_contours(camera.frame)
+        cv2.drawContours(camera.frame, contours, -1, GREEN, 3)
+        cv2.imshow("Circles", camera.frame)
+        if cv2.waitKey(1) == ord("q"):
+            break
+    camera.close()
+    cv2.destroyAllWindows()
 
 def main() -> None:
     print("Vision Settings")
     print("(1) letter templates")
-    print("(2) contours stats calibration")
+    print("(2) contours")
+    print("(3) circles")
     option = input("Enter option index: ")
     if option == "1":
         templates_menu()
     elif option == "2":
-        conours_stats_calibration()
+        contours_calibration()
+    elif option == "3":
+        circles_calibration()
 
 if __name__ == "__main__":
     main()

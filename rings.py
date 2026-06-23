@@ -4,6 +4,7 @@ from enum import Enum
 from dataclasses import dataclass
 from collections import Counter
 from itertools import chain
+from typing import Sequence
 
 class Color(Enum):
     BLACK = 0
@@ -22,13 +23,19 @@ COLOR_TO_HEALTH_VALUE = {
 
 BLACK_MAX_VALUE = 53
 
-def check_potential_ring(image: cv2.typing.MatLike) -> bool:
-    return get_circles(image) is not None
+def get_circle_contours(image: cv2.typing.MatLike) -> Sequence[cv2.typing.MatLike]:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (3, 3), 2)
+    edges = cv2.Canny(image, 50, 150)
+    contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    hierarchy = hierarchy[0]
+    return contours
 
 def get_circles(image: cv2.typing.MatLike) -> cv2.typing.MatLike | None:
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (9, 9), 2)
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, image.shape[0] / 8,
-                                param1=100, param2=60,
+                                param1=100, param2=80,
                                 minRadius=20, maxRadius=500)
     if circles is None:
         return []

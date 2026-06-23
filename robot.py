@@ -83,7 +83,6 @@ class Robot:
     def loop(self) -> None:
         if self.serial_com is not None:
             self.serial_com.try_connect()
-        # self.debug_map_display.new_cell_info(18, 18, True, True, False, True)
         try:
             while True:
                 try:
@@ -125,10 +124,11 @@ class Robot:
             self.debug_map_display.reset_map()
         if self.serial_com.got_continue_message():
             self.continue_cameras()
-        map_data = self.serial_com.get_map_data()
-        if map_data is not None:
-            x, y, left, right, top, bottom = map_data
-            self.debug_map_display.new_cell_info(x, y, left, right, top, bottom)
+        if self.debug_mode:
+            map_data = self.serial_com.get_map_data()
+            if map_data is not None:
+                x, y, left, right, top, bottom = map_data
+                self.debug_map_display.new_cell_info(x, y, left, right, top, bottom)
 
     def check_and_handle_victim(self, camera_index: int) -> None:
         camera = self.cameras[camera_index]
@@ -279,15 +279,15 @@ class Robot:
 
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
     contours = letters.get_contours(image, letters_config.binary_threshold)
+    if len(contours) > 30:
+        return False
+    # print("len1", len(contours))
     contours = letters.filter_contours_by_area(contours, letters_config.area_range)
+    # print("len2", len(contours))
     contours = letters.filter_contours_by_ratio(contours, (0.5, 2.0))
+    # print("len3", len(contours))
     if len(contours) > 0 and len(contours) < 5:
-        # print("len", len(contours))
         return True
-    # if letters.check_potential_letter(image, letters_config):
-    #     return True
-    # if rings.check_potential_ring(image):
-    #     return True
     return False
 
 def get_white_percent(image: cv2.typing.MatLike) -> float:
