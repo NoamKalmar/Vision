@@ -5,7 +5,7 @@ import cv2
 from serial_com import SerialCommunicator
 from camera import Camera
 from letters import Letter, LettersConfig, get_template_contours
-from rings import Color
+from targets import Color
 from robot import Robot
 
 TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy", 

@@ -3,7 +3,8 @@ import numpy as np
 import platform
 from letters import get_contours, filter_contours_by_area, filter_contours_by_ratio
 from camera import Camera
-from rings import get_circle_contours
+from targets import get_colors, get_health
+import math
 
 ASSETS_PATH = "assets"
 VIDEO_CAPTURE_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
@@ -91,16 +92,24 @@ def contours_calibration() -> None:
 def circles_calibration() -> None:
     cap_index = int(input("Enter video capture index: "))
     camera = Camera(cap_index)
+    a = True
     while camera.cap.isOpened():
         camera.update_frame()
         if camera.error:
             print("error reading from camera")
             return
-        contours = get_circle_contours(camera.frame)
-        cv2.drawContours(camera.frame, contours, -1, GREEN, 3)
-        cv2.imshow("Circles", camera.frame)
-        if cv2.waitKey(1) == ord("q"):
+        frame = camera.frame
+        colors = get_colors(frame)
+        if colors is not None:
+            print(get_health(colors))
+        else:
+            print("invalid")
+        cv2.imshow("Circles", frame)
+        key = cv2.waitKey(1)
+        if key == ord("q"):
             break
+        if key == ord("a"):
+            a = not a
     camera.close()
     cv2.destroyAllWindows()
 

@@ -11,7 +11,7 @@ from serial_com import SerialCommunicator
 from map_display import MapDisplay
 import arduino_upload
 import letters
-import rings
+import targets
 import test
 
 
@@ -51,8 +51,8 @@ class Robot:
             time_to_stop: float,
             time_between_scans: float,
             letters_config: letters.LettersConfig,
-            color_ranges: dict[rings.Color, tuple[tuple, tuple]],
-            more_color_ranges: dict[rings.Color, tuple[tuple, tuple]]
+            color_ranges: dict[targets.Color, tuple[tuple, tuple]],
+            more_color_ranges: dict[targets.Color, tuple[tuple, tuple]]
     ) -> None:
         self.name = name
         self.debug_mode = debug_mode
@@ -200,18 +200,13 @@ class Robot:
             status = LETTER_TO_STATUS.get(letter)
             return status
         # If no letter was found, check for a ring
-        # colors, ring = rings.frames_get_colors(frames_buffer, self.color_ranges, self.more_color_ranges)
-        # if ring is not None:
-        #     self.debug_ring = ring
-        #     self.debug_points = rings.point_per_layer(ring)
-        # if colors is not None:
-        #     print(colors)
-        #     health = rings.colors_to_health(colors)
-        #     status = HEALTH_TO_STATUS.get(health)
-        #     if status is not None:
-        #         return status
-        # If neither a letter nor a ring were found, then return a fake status
-        return VictimStatus.FAKE
+        health = targets.get_cognitive_target_health(frames_buffer)
+        if health is None:
+            return VictimStatus.FAKE
+        status = HEALTH_TO_STATUS.get(health)
+        if status is None:
+            return VictimStatus.FAKE
+        return status
 
 
     def handle_victim(self, camera_index: int, status: VictimStatus) -> bool:
