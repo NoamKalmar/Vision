@@ -208,7 +208,6 @@ class Robot:
             return VictimStatus.FAKE
         return status
 
-
     def handle_victim(self, camera_index: int, status: VictimStatus) -> bool:
         # Returns wether the message was sent successfully
         print(f"Handling victim of status {status} coming from camera {camera_index}")
