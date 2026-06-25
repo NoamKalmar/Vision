@@ -22,7 +22,6 @@ class Camera:
         self.frame: cv2.typing.MatLike | None = None
         self.frames_buffer: list[cv2.typing.MatLike] = []
         self.scan_mode: bool = False
-        self.last_scan_time: float = 0
 
     def update_frame(self) -> None:
         ret, self.frame = self.cap.read()
@@ -36,7 +35,6 @@ class Camera:
         while len(self.frames_buffer) <= self.num_scan_frames:
             self.update_frame()
             self.frames_buffer.append(self.frame)
-        self.last_scan_time = time.time()
-    
+
     def close(self) -> None:
         self.cap.release()
