@@ -59,9 +59,7 @@ def get_contour_center(contour: cv2.typing.MatLike) -> tuple[int, int] | None:
     y = int(m01 / m00)
     return x, y
 
-def contours_calibration() -> None:
-    cap_index = int(input("Enter video capture index: "))
-    camera = Camera(cap_index)
+def contours_calibration(camera: Camera) -> None:
     while camera.cap.isOpened():
         camera.update_frame()
         if camera.error:
@@ -107,9 +105,7 @@ def contours_calibration() -> None:
             path = ask_letter_get_path()
             np.save(path, chosen_contour)
 
-def circles_calibration() -> None:
-    cap_index = int(input("Enter video capture index: "))
-    camera = Camera(cap_index)
+def circles_calibration(camera: Camera) -> None:
     while camera.cap.isOpened():
         camera.update_frame()
         if camera.error:
@@ -131,20 +127,24 @@ def circles_calibration() -> None:
         if key == ord("c"):
             colors = get_colors(frame)
             print(colors)
-    camera.close()
     cv2.destroyAllWindows()
 
 def main() -> None:
-    cv2.namedWindow("Settings")
-    cv2.setMouseCallback("Settings", mouse_click)
     print("Vision Settings")
     print("(1) contours")
     print("(2) circles")
     option = input("Enter option index: ")
+    cap_index = int(input("Enter video capture index: "))
+    camera = Camera(cap_index)
+
+    cv2.namedWindow("Settings")
+    cv2.setMouseCallback("Settings", mouse_click)
+
     if option == "1":
-        contours_calibration()
+        contours_calibration(camera)
     elif option == "2":
-        circles_calibration()
+        circles_calibration(camera)
+    camera.close()
 
 if __name__ == "__main__":
     main()
