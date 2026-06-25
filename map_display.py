@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+import sys
+import os
 
 RED = (0, 0, 255)
 GREEN = (0, 255, 0)
@@ -15,14 +17,22 @@ class MapDisplay:
 
         self.robot_x: int = map_length // 2
         self.robot_y: int = map_length // 2
+        
+        self.map_image_path = f"map_{self.map_length}_{self.map_size}.png"
+        self.init_map_image()
+        self.default_map_image = self.map_image.copy()
 
-        self.horizontal_lines = ([False for _ in range(self.map_size)] for _ in range(self.map_size + 1))
-        self.vertical_lines = ([False for _ in range(self.map_size + 1)] for _ in range(self.map_size))
+    def init_map_image(self) -> None:
+        if os.path.isfile(self.map_image_path):
+            self.map_image = cv2.imread(self.map_image_path)
+            return
+        self.generate_default_map_image()
+
+    def generate_default_map_image(self) -> None:
         for y in range(self.map_size):
             for x in range(self.map_size):
                 self.draw_cell_lines(x, y, False, False, False, False)
-        
-        self.default_map_image = self.map_image.copy()
+        cv2.imwrite(self.map_image_path, self.map_image)
 
     def reset_map(self) -> None:
         self.map_image = self.default_map_image.copy()
