@@ -4,14 +4,34 @@ import platform
 from letters import get_contours, filter_contours_by_area, filter_contours_by_ratio
 from camera import Camera
 from targets import get_circle, classify_hue
+import math
 
 ASSETS_PATH = "assets"
 VIDEO_CAPTURE_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
+
+mouse_click_x, mouse_click_y = None, None
+clicked = False
 
 BINARY_THRESHOLD = 100
 AREA_RANGE = (500, 15000)
 
 GREEN = (0, 255, 0)
+RED = (0, 0, 255)
+BLUE = (255, 0, 0)
+
+def mouse_click(event: int, x: int, y: int, flags: int, param: None) -> None:
+    global mouse_click_x, mouse_click_y, clicked
+    if event == cv2.EVENT_LBUTTONDOWN:
+        mouse_click_x, mouse_click_y = x, y
+        clicked = True
+
+def was_mouse_clicked() -> bool:
+    global clicked
+    if clicked:
+        clicked = False
+        return True
+    return False
+
 
 def capture_template(cap_index: int, output_path: str) -> None:
     camera = Camera(cap_index)
@@ -26,7 +46,7 @@ def capture_template(cap_index: int, output_path: str) -> None:
         contours = get_contours(camera.frame, BINARY_THRESHOLD)
         contours = filter_contours_by_area(contours, AREA_RANGE)
         cv2.drawContours(frame_copy, contours, -1, GREEN, 3)
-        cv2.imshow("Vision Template Calibration", frame_copy)
+        cv2.imshow("Settings", frame_copy)
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
@@ -57,6 +77,17 @@ def templates_menu() -> None:
         path += "omega.npy"
     capture_template(cap_index, path)
 
+def get_contour_center(contour: cv2.typing.MatLike) -> tuple[int, int] | None:
+    moments = cv2.moments(contour)
+    m00 = moments["m00"]
+    m10 = moments["m10"]
+    m01 = moments["m01"]
+    if m00 == 0:
+        return None
+    x = int(m10 / m00)
+    y = int(m01 / m00)
+    return x, y
+
 def contours_calibration() -> None:
     cap_index = int(input("Enter video capture index: "))
     camera = Camera(cap_index)
@@ -66,40 +97,43 @@ def contours_calibration() -> None:
             print("error reading from camera")
             return
         frame = camera.frame
-        contours = get_contours(frame, BINARY_THRESHOLD)
-        contours = filter_contours_by_ratio(contours, (0.75, 1.25))
-        contours = filter_contours_by_area(contours, AREA_RANGE)
-        cv2.drawContours(frame, contours, -1, GREEN, 3)
-        cv2.imshow("Vision Area Calibration", frame)
+
+        contours = list(get_contours(frame, BINARY_THRESHOLD))
+        chosen_contour = None
+        if mouse_click_x is not None:
+            cv2.circle(frame, (mouse_click_x, mouse_click_y), 5, BLUE, -1)
+            min_distance_squared = None
+            chosen_contour_index = None
+            # Choosing the contour closest to the point selected
+            for i, contour in enumerate(contours):
+                center = get_contour_center(contour)
+                if center is not None:
+                    x, y = center
+                    distance = (mouse_click_x - x) ** 2 + (mouse_click_y - y) ** 2
+                    if min_distance_squared is None or distance < min_distance_squared:
+                        min_distance_squared = distance
+                        chosen_contour_index = i
+            if min_distance_squared is not None:
+                chosen_contour = contours.pop(chosen_contour_index)
+                cv2.drawContours(frame, [chosen_contour], -1, GREEN, 3)
+
+        cv2.drawContours(frame, contours, -1, RED, 3)
+
+        cv2.imshow("Settings", frame)
         key = cv2.waitKey(1)
+        if chosen_contour is not None:
+            area = cv2.contourArea(chosen_contour)
+            solidity = area / cv2.contourArea(cv2.convexHull(chosen_contour))
+            _, _, w, h = cv2.boundingRect(chosen_contour)
+            arc_length = cv2.arcLength(chosen_contour, True)
+            circularity = 4 * np.pi * area / (arc_length ** 2)
+            print(f"area: {area}, solidity: {solidity}, w-h-ratio: {w / h}, arc length: {arc_length}, circularity: {circularity}")
         if key == ord("q"):
             break
-        elif key == ord("c"):
-            if len(contours) == 0:
-                print("Invalid: Found 0 contours")
-            elif len(contours) > 1:
-                print("Invalid: More than one contour was found")
-            else:
-                contour = contours[0]
-                area = cv2.contourArea(contour)
-                solidity = area / cv2.contourArea(cv2.convexHull(contour))
-                _, _, w, h = cv2.boundingRect(contour)
-                arc_length = cv2.arcLength(contour, True)
-                circularity = 4 * np.pi * area / (arc_length ** 2)
-                print(f"area: {area}, solidity: {solidity}, w-h-ratio: {w / h}, arc length: {arc_length}, circularity: {circularity}")
 
 def circles_calibration() -> None:
-    mouse_x, mouse_y = None, None
-    clicked = False
-    def mouse_click(event: int, x: int, y: int, flags: int, param: None) -> None:
-        nonlocal mouse_x, mouse_y, clicked
-        if event == cv2.EVENT_LBUTTONDOWN:
-            mouse_x, mouse_y = x, y
-            clicked = True
     cap_index = int(input("Enter video capture index: "))
     camera = Camera(cap_index)
-    cv2.namedWindow("Circles")
-    cv2.setMouseCallback("Circles", mouse_click)
     while camera.cap.isOpened():
         camera.update_frame()
         if camera.error:
@@ -110,12 +144,11 @@ def circles_calibration() -> None:
         if circle is not None:
             (x, y), r = circle
             cv2.circle(frame, (int(x), int(y)), int(r), GREEN, 3)
-        if clicked:
+        if was_mouse_clicked():
             hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            h, s, v = hsv_frame[mouse_y, mouse_x]
+            h, s, v = hsv_frame[mouse_click_y, mouse_click_x]
             print(h, s, v, classify_hue(h))
-            clicked = False
-        cv2.imshow("Circles", frame)
+        cv2.imshow("Settings", frame)
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
@@ -123,6 +156,8 @@ def circles_calibration() -> None:
     cv2.destroyAllWindows()
 
 def main() -> None:
+    cv2.namedWindow("Settings")
+    cv2.setMouseCallback("Settings", mouse_click)
     print("Vision Settings")
     print("(1) letter templates")
     print("(2) contours")
