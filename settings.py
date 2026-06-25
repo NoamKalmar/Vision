@@ -3,7 +3,7 @@ import numpy as np
 import platform
 from letters import get_contours, filter_contours_by_area, filter_contours_by_ratio
 from camera import Camera
-from targets import get_circle, classify_hue, get_colors
+from targets import get_circle, classify_hue, get_colors, get_color_counts
 import math
 
 ASSETS_PATH = "assets"
@@ -112,10 +112,11 @@ def circles_calibration(camera: Camera) -> None:
             print("error reading from camera")
             return
         frame = camera.frame
+        frame_copy = frame.copy()
         circle = get_circle(frame)
         if circle is not None:
             (x, y), r = circle
-            cv2.circle(frame, (int(x), int(y)), int(r), GREEN, 3)
+            cv2.circle(frame, (int(x), int(y)), int(r), GREEN, 2)
         if was_mouse_clicked():
             hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             h, s, v = hsv_frame[mouse_click_y, mouse_click_x]

@@ -48,12 +48,9 @@ def get_colors(frame: cv2.typing.MatLike) -> list[Color] | None:
     total_pixels = 360 * R
     colors = []
     for color, pixels in color_counts.items():
-        times = floor(pixels / (total_pixels / 6))
+        times = floor(pixels / (total_pixels / 7))
         for _ in range(times):
             colors.append(color)
-    # Invalid result
-    if len(colors) != 5 or None in colors:
-        return None
     return colors
 
 def get_color_counts(hsv_frame: cv2.typing.MatLike) -> dict[Color, int]:
@@ -63,7 +60,7 @@ def get_color_counts(hsv_frame: cv2.typing.MatLike) -> dict[Color, int]:
     black_mask = v < 50
     color_mask = (v >= 50) & (s > 50)
     counts = {
-        Color.BLACK: np.sum(black_mask),
+        Color.BLACK: int(np.sum(black_mask)),
         Color.RED: 0,
         Color.YELLOW: 0,
         Color.GREEN: 0,
@@ -77,7 +74,9 @@ def get_color_counts(hsv_frame: cv2.typing.MatLike) -> dict[Color, int]:
             counts[color] += 1
     return counts
 
-def get_health_from_colors(colors: list[Color]) -> int:
+def get_health_from_colors(colors: list[Color] | None) -> int | None:
+    if colors is None or len(colors) != 5 or None in colors:
+        return None
     health = 0
     for color in colors:
         health += COLOR_TO_HEALTH_VALUE[color]
@@ -87,9 +86,6 @@ def get_cognitive_target_health(frames: Sequence[cv2.typing.MatLike]) -> int:
     counter = Counter()
     for frame in frames:
         colors = get_colors(frame)
-        if colors is None:
-            counter[None] += 1
-            continue
         health = get_health_from_colors(colors)
         counter[health] += 1
     return max(counter, key=counter.get)
