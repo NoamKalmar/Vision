@@ -11,6 +11,7 @@ from map_display import MapDisplay
 import arduino_upload
 import letters
 import targets
+from win32api import GetSystemMetrics
 
 class VictimStatus(Enum):
     STABLE = 0
@@ -36,6 +37,9 @@ LOWER_WHITE = np.array([0, 0, 160])
 UPPER_WHITE = np.array([180, 60, 255])
 
 BLACK_FRAME = np.zeros((480, 480, 3))
+
+SCREEN_WIDTH = GetSystemMetrics(0)
+SCREEN_HEIGHT = GetSystemMetrics(1)
 
 class Robot:
     def __init__(
@@ -66,6 +70,7 @@ class Robot:
             self.debug_chosen_contour: cv2.typing.MatLike | None = None
             self.debug_threshold_mode: bool = False
             self.debug_contours_mode: bool = False
+            self.debug_camera_positions_set: bool = False
 
     def loop(self) -> None:
         if self.serial_com is not None:
@@ -207,8 +212,22 @@ class Robot:
         cv2.imshow("Map", self.debug_map_display.map_image)
         if self.cameras[0] is not None:
             cv2.imshow("Left Camera", self.get_debug_camera_image(0))
+            if not self.debug_camera_positions_set:
+                cv2.moveWindow(
+                    "Left Camera", 
+                    SCREEN_WIDTH // 10,
+                    SCREEN_HEIGHT // 2 - cv2.getWindowImageRect("Left Camera")[3] // 2
+                )
         if self.cameras[1] is not None:
             cv2.imshow("Right Camera", self.get_debug_camera_image(1))
+            if not self.debug_camera_positions_set:
+                print(SCREEN_WIDTH)
+                cv2.moveWindow(
+                    "Right Camera",
+                    SCREEN_WIDTH - cv2.getWindowImageRect("Right Camera")[2] - SCREEN_WIDTH // 10,
+                    SCREEN_HEIGHT // 2 - cv2.getWindowImageRect("Right Camera")[3] // 2
+                )
+        self.debug_camera_positions_set = True
     
     def get_debug_camera_image(self, camera_index: int) -> cv2.typing.MatLike:
         if len(self.cameras) == 0:
