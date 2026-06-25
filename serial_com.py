@@ -43,7 +43,7 @@ class SerialCommunicator:
     
     def try_connect(self) -> None:
         # Tries to connect to the default port, if there was a failure then wait for a new port
-        for port in self.defualt_ports:
+        for port in self.default_ports:
             error = self.connect(port)
             if not error:
                 return
