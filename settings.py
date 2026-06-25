@@ -3,8 +3,7 @@ import numpy as np
 import platform
 from letters import get_contours, filter_contours_by_area, filter_contours_by_ratio
 from camera import Camera
-from targets import get_colors, get_health
-import math
+from targets import get_circle, classify_hue
 
 ASSETS_PATH = "assets"
 VIDEO_CAPTURE_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
@@ -66,12 +65,12 @@ def contours_calibration() -> None:
         if camera.error:
             print("error reading from camera")
             return
-        frame_copy = camera.frame.copy()
-        contours = get_contours(camera.frame, BINARY_THRESHOLD)
+        frame = camera.frame
+        contours = get_contours(frame, BINARY_THRESHOLD)
         contours = filter_contours_by_ratio(contours, (0.75, 1.25))
         contours = filter_contours_by_area(contours, AREA_RANGE)
-        cv2.drawContours(frame_copy, contours, -1, GREEN, 3)
-        cv2.imshow("Vision Area Calibration", frame_copy)
+        cv2.drawContours(frame, contours, -1, GREEN, 3)
+        cv2.imshow("Vision Area Calibration", frame)
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
@@ -90,26 +89,36 @@ def contours_calibration() -> None:
                 print(f"area: {area}, solidity: {solidity}, w-h-ratio: {w / h}, arc length: {arc_length}, circularity: {circularity}")
 
 def circles_calibration() -> None:
+    mouse_x, mouse_y = None, None
+    clicked = False
+    def mouse_click(event: int, x: int, y: int, flags: int, param: None) -> None:
+        nonlocal mouse_x, mouse_y, clicked
+        if event == cv2.EVENT_LBUTTONDOWN:
+            mouse_x, mouse_y = x, y
+            clicked = True
     cap_index = int(input("Enter video capture index: "))
     camera = Camera(cap_index)
-    a = True
+    cv2.namedWindow("Circles")
+    cv2.setMouseCallback("Circles", mouse_click)
     while camera.cap.isOpened():
         camera.update_frame()
         if camera.error:
             print("error reading from camera")
             return
         frame = camera.frame
-        colors = get_colors(frame)
-        if colors is not None:
-            print(get_health(colors))
-        else:
-            print("invalid")
+        circle = get_circle(frame)
+        if circle is not None:
+            (x, y), r = circle
+            cv2.circle(frame, (int(x), int(y)), int(r), GREEN, 3)
+        if clicked:
+            hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            h, s, v = hsv_frame[mouse_y, mouse_x]
+            print(h, s, v, classify_hue(h))
+            clicked = False
         cv2.imshow("Circles", frame)
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
-        if key == ord("a"):
-            a = not a
     camera.close()
     cv2.destroyAllWindows()
 
