@@ -24,6 +24,8 @@ def mouse_click(event: int, x: int, y: int, flags: int, param: None) -> None:
     if event == cv2.EVENT_LBUTTONDOWN:
         mouse_click_x, mouse_click_y = x, y
         clicked = True
+    elif event == cv2.EVENT_LBUTTONDBLCLK:
+        mouse_click_x, mouse_click_y = None, None
 
 def was_mouse_clicked() -> bool:
     global clicked
