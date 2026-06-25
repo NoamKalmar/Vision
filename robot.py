@@ -11,7 +11,7 @@ from map_display import MapDisplay
 import arduino_upload
 import letters
 import targets
-from win32api import GetSystemMetrics
+import tkinter
 
 class VictimStatus(Enum):
     STABLE = 0
@@ -38,8 +38,9 @@ UPPER_WHITE = np.array([180, 60, 255])
 
 BLACK_FRAME = np.zeros((480, 480, 3))
 
-SCREEN_WIDTH = GetSystemMetrics(0)
-SCREEN_HEIGHT = GetSystemMetrics(1)
+root = tkinter.Tk()
+SCREEN_WIDTH = root.winfo_screenwidth()
+SCREEN_HEIGHT = root.winfo_screenheight()
 
 class Robot:
     def __init__(
