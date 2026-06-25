@@ -75,7 +75,7 @@ def main() -> None:
     )
     serial_com = None
     if not args.noserial:
-        serial_com = SerialCommunicator(PORT, BAUDRATE)
+        serial_com = SerialCommunicator(DEFAULT_PORTS, BAUDRATE)
     left_camera = None
     if int(args.left) >= 0:
         left_camera = Camera(
