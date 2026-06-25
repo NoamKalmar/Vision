@@ -28,7 +28,7 @@ LEFT_CAP_INDEX = 2
 RIGHT_FLIP = False
 LEFT_FLIP = False
 
-PORT = "/dev/ttyUSB0"
+DEFAULT_PORTS = ["/dev/ttyUSB0", "/dev/ttyUSB1"]
 BAUDRATE = 115200
 
 #!!!

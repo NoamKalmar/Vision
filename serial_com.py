@@ -7,8 +7,8 @@ CONTINUE_MESSAGE = "CONTINUE"
 MAP_MESSAGE = "map"
 
 class SerialCommunicator:
-    def __init__(self, default_port: str | None = None, baudrate: int = 9600) -> None:
-        self.default_port = default_port
+    def __init__(self, default_ports: list[str], baudrate: int = 9600) -> None:
+        self.default_ports = default_ports
         self.baudrate = baudrate
         self.serial_com: serial.Serial | None = None
 
@@ -43,10 +43,12 @@ class SerialCommunicator:
     
     def try_connect(self) -> None:
         # Tries to connect to the default port, if there was a failure then wait for a new port
-        error = self.connect(self.default_port)
-        if error:
-            print("Could not connect to the default port. Waiting for a new port.")
-            self.wait_connect()
+        for port in self.defualt_ports:
+            error = self.connect(port)
+            if not error:
+                return
+        print("Could not connect to any of the default ports. Waiting for a new device.")
+        self.wait_connect()
 
     def check_connection(self) -> bool:
         for port in comports():
