@@ -19,9 +19,6 @@ BINARY_THRESHOLD = 100
 
 NUM_SCAN_FRAMES = 10
 
-MORE_COLOR_RANGES = {Color.RED: ((170, 120, 70), (179, 255, 255))}
-
-ROBOT_STOP_TIME = 5
 CONTINUE_WAITING_TIMEOUT = 25
 
 AREA_RANGE = (1000, 15000)
@@ -36,7 +33,6 @@ BAUDRATE = 115200
 
 #!!!
 # TO DO: add circularity validation for letters: (4 * pie * area) / (perimeter^2)
-# TO DO: CHECK WHY COLORS RETURN A LOT OF NONES
 #!!!
 
 def parse_args() -> argparse.Namespace:

@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import os
-import sys
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
