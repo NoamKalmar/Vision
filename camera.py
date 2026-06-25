@@ -30,8 +30,6 @@ class Camera:
         if not self.error:
             if self.flip:
                 self.frame = cv2.flip(self.frame, -1)
-        # else:
-        #     self.frame = np.zeros((WIDTH, HEIGHT, 3)) 
     
     def scan(self) -> None:
         self.frames_buffer = []

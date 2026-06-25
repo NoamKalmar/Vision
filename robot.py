@@ -1,7 +1,6 @@
 from enum import Enum
 import time
 import traceback
-from typing import Literal
 
 import cv2
 import numpy as np
@@ -12,8 +11,6 @@ from map_display import MapDisplay
 import arduino_upload
 import letters
 import targets
-import test
-
 
 class VictimStatus(Enum):
     STABLE = 0
@@ -48,34 +45,24 @@ class Robot:
             serial_com: SerialCommunicator | None,
             left_camera: Camera | None,
             right_camera: Camera | None,
-            time_to_stop: float,
-            time_between_scans: float,
+            continue_waiting_timeout: float,
             letters_config: letters.LettersConfig,
-            color_ranges: dict[targets.Color, tuple[tuple, tuple]],
-            more_color_ranges: dict[targets.Color, tuple[tuple, tuple]]
     ) -> None:
         self.name = name
         self.debug_mode = debug_mode
         self.serial_com = serial_com
         self.letters_config = letters_config
-        self.color_ranges = color_ranges
-        self.more_color_ranges = more_color_ranges
-        self.time_to_stop = time_to_stop
-        self.time_between_scans = time_between_scans
+        self.continue_waiting_timeout = continue_waiting_timeout
 
-        # Initalize a camera for each video capture
         self.cameras: list[Camera] = [left_camera, right_camera]
+        self.waiting_cameras: list[int] = []
 
         self.last_victim_time: float = 0
-        self.waiting_cameras: list[int] = []
         
         # Relevant only for debug mode
         if self.debug_mode:
-            self.debug_window_title: str = ""
             self.debug_map_display: MapDisplay = MapDisplay()
             self.debug_chosen_camera_index: int = 0
-            self.debug_ring: cv2.typing.MatLike | None = None
-            self.debug_points: list[tuple[int, int]] | None = None
             self.debug_chosen_contour: cv2.typing.MatLike | None = None
             self.debug_threshold_mode: bool = False
             self.debug_contours_mode: bool = False
@@ -102,7 +89,7 @@ class Robot:
         # Check serial connection and detect if needed
         if self.serial_com is not None:
             self.serial_loop()
-        if time.time() - self.last_victim_time > self.time_between_scans:
+        if time.time() - self.last_victim_time > self.continue_waiting_timeout:
             self.continue_cameras()
         # Check for victims and act accordingly
         for i in range(len(self.cameras)):
@@ -241,11 +228,6 @@ class Robot:
         if self.debug_contours_mode:
             contours = letters.get_contours(frame, self.letters_config.binary_threshold)
             cv2.drawContours(frame, contours, -1, RED, 3)
-        if self.debug_ring is not None:
-            cv2.circle(frame, (self.debug_ring[0], self.debug_ring[1]), self.debug_ring[2], GREEN, 3)
-        if self.debug_points is not None:
-            for point in self.debug_points:
-                cv2.circle(frame, point, 1, WHITE, 3)
         if self.debug_chosen_contour is not None and len(self.waiting_cameras) != 0:
             if camera_index == self.waiting_cameras[-1]:
                 cv2.drawContours(frame, [self.debug_chosen_contour], 0, GREEN, 3)
@@ -255,10 +237,8 @@ class Robot:
         return frame
 
     def clear_debug(self) -> None:
-        self.debug_ring = None
         self.debug_contours = None
         self.debug_chosen_contour = None
-        self.debug_points = None
         self.debug_contours_mode = None
         self.debug_threshold_mode = None
 
@@ -275,18 +255,8 @@ def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.Le
     contours = letters.get_contours(image, letters_config.binary_threshold)
     if len(contours) > 30:
         return False
-    # print("len1", len(contours))
     contours = letters.filter_contours_by_area(contours, letters_config.area_range)
-    # print("len2", len(contours))
     contours = letters.filter_contours_by_ratio(contours, (0.5, 2.0))
-    # print("len3", len(contours))
     if len(contours) > 0 and len(contours) < 5:
         return True
     return False
-
-def get_white_percent(image: cv2.typing.MatLike) -> float:
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, LOWER_WHITE, UPPER_WHITE)
-    white = cv2.countNonZero(mask)
-    total_pixels = mask.size
-    return white / total_pixels

@@ -49,13 +49,6 @@ class SerialCommunicator:
             self.wait_connect()
 
     def check_connection(self) -> bool:
-        # if self.serial_com is None:
-        #     return False
-        # try:
-        #     self.serial_com.write(b".")
-        # except serial.SerialException:
-        #     return False
-        # return True
         for port in comports():
             if port.device == self.serial_com.port:
                 return True
@@ -66,9 +59,6 @@ class SerialCommunicator:
         <camera_index>:<victim_value>:<(time_of_detection - start_time) (round to 1 decimal point) * 1000>:
         Returns whether there was an error
         """
-        # if self.start_time == None:
-        #     print("Error while trying to send message: START message have not been sent yet")
-        #     return
         # message = f"{camera_index}:{victim_values}:"
         message = f"{camera_index}:{victim_value}:"
         

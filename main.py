@@ -19,17 +19,10 @@ BINARY_THRESHOLD = 100
 
 NUM_SCAN_FRAMES = 10
 
-COLOR_RANGES = {
-    Color.RED: ((0, 120, 70), (10, 255, 255)),
-    Color.YELLOW: ((20, 100, 100), (35, 255, 255)),
-    Color.GREEN: ((35, 80, 80), (85, 255, 255)),
-    Color.BLUE: ((90, 80, 80), (130, 255, 255))
-}
-
 MORE_COLOR_RANGES = {Color.RED: ((170, 120, 70), (179, 255, 255))}
 
 ROBOT_STOP_TIME = 5
-TIME_BETWEEN_SCANS = 25
+CONTINUE_WAITING_TIMEOUT = 25
 
 AREA_RANGE = (1000, 15000)
 
@@ -108,11 +101,8 @@ def main() -> None:
         serial_com=serial_com,
         left_camera=left_camera,
         right_camera=right_camera,
-        time_to_stop=ROBOT_STOP_TIME,
-        time_between_scans=TIME_BETWEEN_SCANS,
-        letters_config=letters_config,
-        color_ranges=COLOR_RANGES,
-        more_color_ranges=MORE_COLOR_RANGES
+        continue_waiting_timeout=CONTINUE_WAITING_TIMEOUT,
+        letters_config=letters_config
     )
     
     robot.loop()
