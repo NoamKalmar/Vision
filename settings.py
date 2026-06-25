@@ -3,7 +3,7 @@ import numpy as np
 import platform
 from letters import get_contours, filter_contours_by_area, filter_contours_by_ratio
 from camera import Camera
-from targets import get_circle, classify_hue
+from targets import get_circle, classify_hue, get_colors
 import math
 
 ASSETS_PATH = "assets"
@@ -128,6 +128,9 @@ def circles_calibration() -> None:
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
+        if key == ord("c"):
+            colors = get_colors(frame)
+            print(colors)
     camera.close()
     cv2.destroyAllWindows()
 
