@@ -34,7 +34,6 @@ class Camera:
     def scan(self) -> None:
         self.frames_buffer = []
         while len(self.frames_buffer) <= self.num_scan_frames:
-            # print(f"Scanning {len(self.frames_buffer)}/{self.num_scan_frames}")
             self.update_frame()
             self.frames_buffer.append(self.frame)
         self.last_scan_time = time.time()
