@@ -32,42 +32,11 @@ def was_mouse_clicked() -> bool:
         return True
     return False
 
-
-def capture_template(cap_index: int, output_path: str) -> None:
-    camera = Camera(cap_index)
-    captured_frame: cv2.typing.MatLike | None = None
-    print("Press 'c' to capture")
-    while camera.cap.isOpened():
-        camera.update_frame()
-        if camera.error:
-            print("error reading from camera")
-            return
-        frame_copy = camera.frame.copy()
-        contours = get_contours(camera.frame, BINARY_THRESHOLD)
-        contours = filter_contours_by_area(contours, AREA_RANGE)
-        cv2.drawContours(frame_copy, contours, -1, GREEN, 3)
-        cv2.imshow("Settings", frame_copy)
-        key = cv2.waitKey(1)
-        if key == ord("q"):
-            break
-        elif key == ord("c"):
-            if len(contours) == 0:
-                print("Invalid: Found 0 contours")
-            elif len(contours) > 1:
-                print("Invalid: More than one contour was found")
-            else:
-                np.save(output_path, contours[0])
-                # cv2.imwrite(img_output_path, frame)
-                break
-    camera.close()
-    cv2.destroyAllWindows()
-
-def templates_menu() -> None:
+def ask_letter_get_path() -> str:
     print("(1) phi")
     print("(2) psi")
     print("(3) omega")
     letter = input("Enter letter index: ")
-    cap_index = int(input("Enter video capture index: "))
     path = f"{ASSETS_PATH}/"
     if letter == "1":
         path += "phi.npy"
@@ -75,7 +44,7 @@ def templates_menu() -> None:
         path += "psi.npy"
     elif letter == "3":
         path += "omega.npy"
-    capture_template(cap_index, path)
+    return path
 
 def get_contour_center(contour: cv2.typing.MatLike) -> tuple[int, int] | None:
     moments = cv2.moments(contour)
@@ -130,6 +99,11 @@ def contours_calibration() -> None:
             print(f"area: {area}, solidity: {solidity}, w-h-ratio: {w / h}, arc length: {arc_length}, circularity: {circularity}")
         if key == ord("q"):
             break
+        if key == ord("c"):
+            if chosen_contour is None:
+                print("Please select a contour first")
+            path = ask_letter_get_path()
+            np.save(path, chosen_contour)
 
 def circles_calibration() -> None:
     cap_index = int(input("Enter video capture index: "))
@@ -159,15 +133,12 @@ def main() -> None:
     cv2.namedWindow("Settings")
     cv2.setMouseCallback("Settings", mouse_click)
     print("Vision Settings")
-    print("(1) letter templates")
-    print("(2) contours")
-    print("(3) circles")
+    print("(1) contours")
+    print("(2) circles")
     option = input("Enter option index: ")
     if option == "1":
-        templates_menu()
-    elif option == "2":
         contours_calibration()
-    elif option == "3":
+    elif option == "2":
         circles_calibration()
 
 if __name__ == "__main__":
