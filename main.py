@@ -70,7 +70,7 @@ def main() -> None:
         binary_threshold=BINARY_THRESHOLD,
         area_range=AREA_RANGE,
         min_matches=MIN_MATCHES,
-        normal_width_to_height_range=(0.5, 1.5),
+        normal_width_to_height_range=(0.75, 1.25),
         normal_solidity_range_for_letter=NORMAL_SOLIDITY_RANGES
     )
     serial_com = None
