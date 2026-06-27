@@ -23,10 +23,6 @@ class Letter(Enum):
     PSI = 1
     OMEGA = 2
 
-def check_potential_letter(image: cv2.typing.MatLike, config: LettersConfig) -> bool:
-    contours = get_contours(image, config.binary_threshold)
-    return len(contours) != 0
-
 def get_contours(image: cv2.typing.MatLike, binary_threshold: int) -> Sequence[cv2.typing.MatLike]:
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(grayscale, binary_threshold, 255, cv2.THRESH_BINARY_INV)

@@ -1,11 +1,12 @@
-import cv2
-import numpy as np
 from enum import Enum
-from dataclasses import dataclass
 from collections import Counter
-from itertools import chain
 from typing import Sequence
 from math import floor
+
+import numpy as np
+import cv2
+
+from contour_utils import get_circularity
 
 class Color(Enum):
     BLACK = 0
@@ -22,15 +23,15 @@ COLOR_TO_HEALTH_VALUE = {
     Color.BLUE: 2
 }
 
-BLACK_MAX_VALUE = 53
+MIN_CIRCULAIRTY = 0.80
 
-def get_circle(frame: cv2.typing.MatLike) -> tuple[cv2.typing.Point2f, float] | None:
+def get_circle(frame) -> tuple[cv2.typing.Point2f, float] | None:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # filter by area and circularity
-    contours = list(filter(lambda c: cv2.contourArea(c) > 200, contours))
-    contours = list(filter(lambda c: (4 * np.pi * cv2.contourArea(c)) / (cv2.arcLength(c, True) ** 2) > 0.80, contours))
+    contours = list(filter(lambda c: cv2.contourArea(c) > 100, contours))
+    contours = list(filter(lambda c: get_circularity(c) >= MIN_CIRCULAIRTY , contours))
     if len(contours) == 0:
         return None 
     circle_contour = max(contours, key=lambda c: cv2.contourArea(c)) # Choose the biggest contour

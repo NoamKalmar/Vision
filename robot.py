@@ -1,6 +1,7 @@
 from enum import Enum
 import time
 import traceback
+import tkinter
 
 import cv2
 import numpy as np
@@ -11,7 +12,6 @@ from map_display import MapDisplay
 import arduino_upload
 import letters
 import targets
-import tkinter
 
 class VictimStatus(Enum):
     STABLE = 0
