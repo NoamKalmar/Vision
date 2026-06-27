@@ -12,6 +12,7 @@ from map_display import MapDisplay
 import arduino_upload
 import letters
 import targets
+import contour_utils
 
 class VictimStatus(Enum):
     STABLE = 0
@@ -275,8 +276,11 @@ def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.Le
     contours = letters.get_contours(image, letters_config.binary_threshold)
     if len(contours) > 30:
         return False
-    contours = letters.filter_contours_by_area(contours, letters_config.area_range)
-    contours = letters.filter_contours_by_ratio(contours, (0.5, 2.0))
-    if len(contours) > 0 and len(contours) < 5:
+    contours = contour_utils.filter_contours(
+        contours, 
+        letters_config.area_range, 
+        letters_config.width_to_height_range
+    )
+    if 0 < len(contours) < 5:
         return True
     return False

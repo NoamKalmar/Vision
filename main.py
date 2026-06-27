@@ -5,7 +5,6 @@ import cv2
 from serial_com import SerialCommunicator
 from camera import Camera
 from letters import Letter, LettersConfig, get_template_contours
-from targets import Color
 from robot import Robot
 
 TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy", 
@@ -13,7 +12,7 @@ TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy",
                Letter.OMEGA: "assets/omega.npy"}
 
 MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 3.0}
-NORMAL_SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.94), Letter.PSI: (0.42, 0.48), Letter.OMEGA: (0.38, 0.42)}
+SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.94), Letter.PSI: (0.42, 0.48), Letter.OMEGA: (0.38, 0.42)}
 
 BINARY_THRESHOLD = 100
 
@@ -70,8 +69,8 @@ def main() -> None:
         binary_threshold=BINARY_THRESHOLD,
         area_range=AREA_RANGE,
         min_matches=MIN_MATCHES,
-        normal_width_to_height_range=(0.75, 1.25),
-        normal_solidity_range_for_letter=NORMAL_SOLIDITY_RANGES
+        width_to_height_range=(0.75, 1.25),
+        solidity_ranges=SOLIDITY_RANGES
     )
     serial_com = None
     if not args.noserial:

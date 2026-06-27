@@ -1,27 +1,30 @@
-import cv2
-import numpy as np
-from dataclasses import dataclass
 from enum import Enum
 from typing import Sequence
+from dataclasses import dataclass
 from collections import Counter
+
+import cv2
+import numpy as np
+
+import contour_utils
 
 MORPH_KERNEL2 = np.ones((2, 2), np.uint8)
 MORPH_KERNEL1 = np.ones((5, 5), np.uint8)
 
+class Letter(Enum):
+    PHI = 0
+    PSI = 1
+    OMEGA = 2
 
 @dataclass
 class LettersConfig:
     templates: dict[int, cv2.typing.MatLike] # letter to template (contour). can get by using get_contour_template
     binary_threshold: int = 75 # max value for a pixel to be considered as black (0 is black, 255 is white)
     area_range: tuple[int, int] | None = None # for all letters
-    min_matches: dict[int, float] | None = None # letter to min match for that letter
-    normal_width_to_height_range: tuple[float, float] | None = None # for all letters 
-    normal_solidity_range_for_letter: dict[int, tuple[float, float]] | None = None # for each letter
-
-class Letter(Enum):
-    PHI = 0
-    PSI = 1
-    OMEGA = 2
+    width_to_height_range: tuple[float, float] | None = None # for all letters 
+    min_matches: dict[Letter, float] | None = None # for each letter
+    solidity_ranges: dict[Letter, tuple[float, float]] | None = None # for each letter
+    circularity_ranges: dict[Letter, tuple[float, float]] | None = None # for each letter
 
 def get_contours(image: cv2.typing.MatLike, binary_threshold: int) -> Sequence[cv2.typing.MatLike]:
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -31,28 +34,11 @@ def get_contours(image: cv2.typing.MatLike, binary_threshold: int) -> Sequence[c
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def get_template_contours(template_paths: dict[int, set]) -> dict[int, Sequence[cv2.typing.MatLike]]:
+def get_template_contours(template_paths: dict[Letter, str]) -> dict[Letter, cv2.typing.MatLike]:
     contours = {}
     for template_key, path in template_paths.items():
         contours[template_key] = np.load(path)
     return contours
-
-def filter_contours_by_ratio(contours: Sequence[cv2.typing.MatLike], valid_range: tuple[float, float]) -> Sequence[cv2.typing.MatLike]:
-    filtered_contours = []
-    for contour in contours:
-        _, _, w, h = cv2.boundingRect(contour)
-        ratio = w / h
-        if ratio > valid_range[0] and ratio < valid_range[1]:
-            filtered_contours.append(contour)
-    return filtered_contours
-
-def filter_contours_by_area(contours: Sequence[cv2.typing.MatLike], area_range: tuple[int, int]) -> Sequence[cv2.typing.MatLike]:
-    filtered_contours = []
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        if area >= area_range[0] and area <= area_range[1]:
-            filtered_contours.append(contour)
-    return filtered_contours
 
 def check_for_templates(
         contours: Sequence[cv2.typing.MatLike], 
@@ -77,8 +63,8 @@ def is_match_valid(
 ) -> bool:
     if match > min_valid:
         return False
-    solidity = cv2.contourArea(contour) / cv2.contourArea(cv2.convexHull(contour))
     if solidity_range is not None:
+        solidity = contour_utils.get_solidity(contour)
         if solidity < solidity_range[0] or solidity > solidity_range[1]:
             return False
     return True
@@ -89,19 +75,15 @@ def get_letter(
 ) -> tuple[Letter, cv2.typing.MatLike] | tuple[None, None]:
     """Returns the correct letter and the contour that was identified to be that letter"""
     contours = get_contours(frame, config.binary_threshold)
-    if config.normal_width_to_height_range is not None:
-        contours = filter_contours_by_ratio(contours, config.normal_width_to_height_range)
-    if config.area_range is not None:
-        contours = filter_contours_by_area(contours, config.area_range)
+    contours = contour_utils.filter_contours(contours, config.area_range, config.width_to_height_range)
     matches, best_contours = check_for_templates(contours, config.templates)
-    # print(matches)
     sorted_matches = sorted(matches.items(), key=lambda match: match[1])
     for letter, match in sorted_matches:
         if is_match_valid(
             match, 
             config.min_matches[letter], 
             best_contours[letter], 
-            config.normal_solidity_range_for_letter[letter]
+            config.solidity_ranges[letter]
         ):
             return letter, best_contours[letter]
     return None, None

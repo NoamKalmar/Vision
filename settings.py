@@ -1,10 +1,9 @@
 import cv2
 import numpy as np
 import platform
-from letters import get_contours, filter_contours_by_area, filter_contours_by_ratio
+from letters import get_contours
 from camera import Camera
-from targets import get_circle, classify_hue, get_colors, get_color_counts
-import math
+from targets import get_circle, classify_hue, get_colors
 
 ASSETS_PATH = "assets"
 VIDEO_CAPTURE_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
