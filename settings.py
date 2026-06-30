@@ -3,7 +3,7 @@ import numpy as np
 from letters import get_template_contours, Letter
 import contour_utils
 from camera import Camera
-from targets import get_circle, classify_hue, get_colors
+from targets import get_circle, classify_hue, get_colors, get_colored_contours
 
 ASSETS_PATH = "assets"
 
@@ -68,7 +68,8 @@ def contours_calibration(camera: Camera) -> None:
             print("error reading from camera")
             return
         frame = camera.frame
-        contours = list(contour_utils.get_contours(frame))
+        # contours = list(contour_utils.get_contours(frame))
+        contours = list(get_colored_contours(frame))
         chosen_contour = None
         if mouse_click_x is not None:
             cv2.circle(frame, (mouse_click_x, mouse_click_y), 5, BLUE, -1)

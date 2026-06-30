@@ -47,10 +47,11 @@ def filter_contours(
         if area_range is not None:
             area = cv2.contourArea(contour)
             if area < area_range[0] or area > area_range[1]:
-                False
+                return False
         if width_height_ratio_range is not None:
             ratio = get_width_height_ratio(contour)
             if ratio < width_height_ratio_range[0] or ratio > width_height_ratio_range[1]:
                 return False
         return True
+    contours = list(filter(filter_function, contours))
     return list(filter(filter_function, contours))

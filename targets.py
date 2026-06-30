@@ -23,10 +23,45 @@ COLOR_TO_HEALTH_VALUE = {
     Color.BLUE: 2
 }
 
+MORPH_KERNEL = np.ones((11, 11), np.uint8)
+
+COLOR_RANGES = {
+    Color.RED: [
+        (np.array([0, 120, 70]), np.array([10, 255, 255])),
+        (np.array([165, 120, 70]), np.array([180, 255, 255]))
+    ],
+    Color.YELLOW: [
+        (np.array([15, 100, 100]), np.array([35, 255, 255]))
+    ],
+    Color.GREEN: [
+        (np.array([35, 100, 50]), np.array([90, 255, 255]))
+    ],
+    Color.BLUE: [
+        (np.array([90, 80, 50]), np.array([130, 100, 255]))
+    ],
+    Color.BLACK: [
+        (np.array([0, 0, 0]), np.array([180, 255, 50]))
+    ]
+}
+
 MIN_CIRCULAIRTY = 0.80
 
-def get_circle(frame) -> tuple[cv2.typing.Point2f, float] | None:
-    contours = contour_utils.get_contours(frame)
+def get_colored_contours(frame: cv2.typing.MatLike) -> Sequence[cv2.typing.MatLike]:
+    h, w = frame.shape[:2]
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    mask = np.zeros((h, w), dtype=np.uint8)
+
+    for ranges in COLOR_RANGES.values():
+        color_mask = np.zeros((h, w), dtype=np.uint8)
+        for lower, upper in ranges:
+            color_mask |= cv2.inRange(hsv, lower, upper)
+        mask |= color_mask
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, MORPH_KERNEL)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
+
+def get_circle(frame: cv2.typing.MatLike) -> tuple[cv2.typing.Point2f, float] | None:
+    contours = get_colored_contours(frame)
     contours = contour_utils.filter_contours(contours, (1000, 10000), (0.75, 1.25))
     contours = list(filter(lambda c: contour_utils.get_circularity(c) > MIN_CIRCULAIRTY, contours))
     if len(contours) == 0:
