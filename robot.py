@@ -243,11 +243,11 @@ class Robot:
         # Threshold mode cannot work with the other modes
         if self.debug_threshold_mode:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            _, frame = cv2.threshold(frame, self.letters_config.binary_threshold, 255, cv2.THRESH_BINARY_INV)
+            _, frame = cv2.threshold(frame, contour_utils.BINARY_THRESHOLD, 255, cv2.THRESH_BINARY_INV)
             return frame
         
         if self.debug_contours_mode:
-            contours = letters.get_contours(frame, self.letters_config.binary_threshold)
+            contours = contour_utils.get_contours(frame)
             cv2.drawContours(frame, contours, -1, RED, 3)
         if self.debug_chosen_contour is not None and len(self.waiting_cameras) != 0:
             if camera_index == self.waiting_cameras[-1]:
@@ -273,7 +273,7 @@ class Robot:
         cv2.destroyAllWindows()
 
 def check_potential_victim(image: cv2.typing.MatLike, letters_config: letters.LettersConfig) -> bool:
-    contours = letters.get_contours(image, letters_config.binary_threshold)
+    contours = contour_utils.get_contours(image)
     if len(contours) > 30:
         return False
     contours = contour_utils.filter_contours(

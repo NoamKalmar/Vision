@@ -6,7 +6,7 @@ from math import floor
 import numpy as np
 import cv2
 
-from contour_utils import get_circularity
+import contour_utils
 
 class Color(Enum):
     BLACK = 0
@@ -26,14 +26,11 @@ COLOR_TO_HEALTH_VALUE = {
 MIN_CIRCULAIRTY = 0.80
 
 def get_circle(frame) -> tuple[cv2.typing.Point2f, float] | None:
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # filter by area and circularity
-    contours = list(filter(lambda c: cv2.contourArea(c) > 100, contours))
-    contours = list(filter(lambda c: get_circularity(c) >= MIN_CIRCULAIRTY , contours))
+    contours = contour_utils.get_contours(frame)
+    contours = contour_utils.filter_contours(contours, (1000, 10000), (0.75, 1.25))
+    contours = list(filter(lambda c: contour_utils.get_circularity(c) > MIN_CIRCULAIRTY, contours))
     if len(contours) == 0:
-        return None 
+        return None
     circle_contour = max(contours, key=lambda c: cv2.contourArea(c)) # Choose the biggest contour
     circle = cv2.minEnclosingCircle(circle_contour)
     return circle

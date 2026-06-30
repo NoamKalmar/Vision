@@ -11,10 +11,10 @@ TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy",
                Letter.PSI: "assets/psi.npy", 
                Letter.OMEGA: "assets/omega.npy"}
 
-MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 3.0}
-SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.94), Letter.PSI: (0.42, 0.48), Letter.OMEGA: (0.38, 0.42)}
-
-BINARY_THRESHOLD = 100
+MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.5, Letter.OMEGA: 1.5}
+SOLIDITY_RANGES = {Letter.PHI: (0.89, 0.94), Letter.PSI: (0.38, 0.43), Letter.OMEGA: (0.38, 0.42)}
+CIRCULARITY_RANGES = {Letter.PHI: (0.68, 0.73), Letter.PSI: (0.09, 0.13), Letter.OMEGA: (0.08, 0.12)}
+EXTENT_RANGES = {Letter.PHI: (0.60, 0.65), Letter.PSI: (0.25, 0.31), Letter.OMEGA: (0.30, 0.35)}
 
 NUM_SCAN_FRAMES = 10
 
@@ -66,7 +66,6 @@ def main() -> None:
     templates = get_template_contours(TEMPLATE_PATHS)
     letters_config = LettersConfig(
         templates=templates,
-        binary_threshold=BINARY_THRESHOLD,
         area_range=AREA_RANGE,
         min_matches=MIN_MATCHES,
         width_to_height_range=(0.75, 1.25),

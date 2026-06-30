@@ -19,20 +19,12 @@ class Letter(Enum):
 @dataclass
 class LettersConfig:
     templates: dict[int, cv2.typing.MatLike] # letter to template (contour). can get by using get_contour_template
-    binary_threshold: int = 75 # max value for a pixel to be considered as black (0 is black, 255 is white)
     area_range: tuple[int, int] | None = None # for all letters
     width_to_height_range: tuple[float, float] | None = None # for all letters 
     min_matches: dict[Letter, float] | None = None # for each letter
     solidity_ranges: dict[Letter, tuple[float, float]] | None = None # for each letter
     circularity_ranges: dict[Letter, tuple[float, float]] | None = None # for each letter
-
-def get_contours(image: cv2.typing.MatLike, binary_threshold: int) -> Sequence[cv2.typing.MatLike]:
-    grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(grayscale, binary_threshold, 255, cv2.THRESH_BINARY_INV)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, MORPH_KERNEL1)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, MORPH_KERNEL2)
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    return contours
+    extent_ranges: dict[Letter, tuple[float, float]] | None = None # for each letter
 
 def get_template_contours(template_paths: dict[Letter, str]) -> dict[Letter, cv2.typing.MatLike]:
     contours = {}
@@ -59,13 +51,23 @@ def is_match_valid(
         match: float, 
         min_valid: float, 
         contour: cv2.typing.MatLike | None, 
-        solidity_range: tuple[float, float] | None
+        solidity_range: tuple[float, float] | None,
+        circularity_range: tuple[float, float] | None,
+        extent_range: tuple[float, float] | None
 ) -> bool:
     if match > min_valid:
         return False
     if solidity_range is not None:
         solidity = contour_utils.get_solidity(contour)
         if solidity < solidity_range[0] or solidity > solidity_range[1]:
+            return False
+    if circularity_range is not None:
+        circularity = contour_utils.get_circularity(contour)
+        if circularity < circularity_range[0] or circularity > circularity_range[1]:
+            return False
+    if extent_range is not None:
+        extent = contour_utils.get_circularity(contour)
+        if extent < extent_range[0] or extent > extent_range[1]:
             return False
     return True
 
@@ -74,7 +76,7 @@ def get_letter(
         config: LettersConfig
 ) -> tuple[Letter, cv2.typing.MatLike] | tuple[None, None]:
     """Returns the correct letter and the contour that was identified to be that letter"""
-    contours = get_contours(frame, config.binary_threshold)
+    contours = contour_utils.get_contours(frame)
     contours = contour_utils.filter_contours(contours, config.area_range, config.width_to_height_range)
     matches, best_contours = check_for_templates(contours, config.templates)
     sorted_matches = sorted(matches.items(), key=lambda match: match[1])
@@ -83,7 +85,9 @@ def get_letter(
             match, 
             config.min_matches[letter], 
             best_contours[letter], 
-            config.solidity_ranges[letter]
+            config.solidity_ranges[letter],
+            config.circularity_ranges,
+            config.extent_ranges
         ):
             return letter, best_contours[letter]
     return None, None

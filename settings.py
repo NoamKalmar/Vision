@@ -1,17 +1,19 @@
 import cv2
 import numpy as np
-import platform
-from letters import get_contours
+from letters import get_template_contours, Letter
+import contour_utils
 from camera import Camera
 from targets import get_circle, classify_hue, get_colors
 
 ASSETS_PATH = "assets"
-VIDEO_CAPTURE_API = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2
 
 mouse_click_x, mouse_click_y = None, None
 clicked = False
 
-BINARY_THRESHOLD = 100
+TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy", 
+               Letter.PSI: "assets/psi.npy", 
+               Letter.OMEGA: "assets/omega.npy"}
+
 AREA_RANGE = (500, 15000)
 
 GREEN = (0, 255, 0)
@@ -59,14 +61,14 @@ def get_contour_center(contour: cv2.typing.MatLike) -> tuple[int, int] | None:
     return x, y
 
 def contours_calibration(camera: Camera) -> None:
+    templates = get_template_contours(TEMPLATE_PATHS)
     while camera.cap.isOpened():
         camera.update_frame()
         if camera.error:
             print("error reading from camera")
             return
         frame = camera.frame
-
-        contours = list(get_contours(frame, BINARY_THRESHOLD))
+        contours = list(contour_utils.get_contours(frame))
         chosen_contour = None
         if mouse_click_x is not None:
             cv2.circle(frame, (mouse_click_x, mouse_click_y), 5, BLUE, -1)
@@ -91,11 +93,15 @@ def contours_calibration(camera: Camera) -> None:
         key = cv2.waitKey(1)
         if chosen_contour is not None:
             area = cv2.contourArea(chosen_contour)
-            solidity = area / cv2.contourArea(cv2.convexHull(chosen_contour))
-            _, _, w, h = cv2.boundingRect(chosen_contour)
-            arc_length = cv2.arcLength(chosen_contour, True)
-            circularity = 4 * np.pi * area / (arc_length ** 2)
-            print(f"area: {area}, solidity: {solidity}, w-h-ratio: {w / h}, arc length: {arc_length}, circularity: {circularity}")
+            solidity = contour_utils.get_solidity(chosen_contour)
+            width_height_ratio = contour_utils.get_width_height_ratio(chosen_contour)
+            extent = contour_utils.get_extent(chosen_contour) 
+            circularity = contour_utils.get_circularity(chosen_contour)
+            phi = cv2.matchShapes(chosen_contour, templates[Letter.PHI], 1, 0.0)
+            psi = cv2.matchShapes(chosen_contour, templates[Letter.PSI], 1, 0.0)
+            omega = cv2.matchShapes(chosen_contour, templates[Letter.OMEGA], 1, 0.0)
+            print(f"area: {area:.2f}, solidity: {solidity:.2f}, w-h-ratio: {width_height_ratio:.2f}, circularity: {circularity:.2f}, extent: {extent:.2f}")
+            print(f"phi: {phi:.2f}, psi: {psi:.2f}, omega: {omega:.2f}")
         if key == ord("q"):
             break
         if key == ord("c"):
@@ -129,10 +135,31 @@ def circles_calibration(camera: Camera) -> None:
             print(colors)
     cv2.destroyAllWindows()
 
+def threshold_calibration(camera: Camera) -> None:
+    threshold = 100
+    while camera.cap.isOpened():
+        camera.update_frame()
+        if camera.error:
+            print("Error: Can't read from camera")
+            return
+        gray = cv2.cvtColor(camera.frame, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY_INV)
+        cv2.imshow("Settings", thresh)
+        key = cv2.waitKey(1)
+        if key == ord("q"):
+            return
+        elif key == ord("-"):
+            threshold -= 1
+        elif key == ord("="):
+            threshold += 1
+        print(threshold)
+    cv2.destroyAllWindows()
+
 def main() -> None:
     print("Vision Settings")
     print("(1) contours")
     print("(2) circles")
+    print("(3) threshold")
     option = input("Enter option index: ")
     cap_index = int(input("Enter video capture index: "))
     camera = Camera(cap_index)
@@ -144,6 +171,8 @@ def main() -> None:
         contours_calibration(camera)
     elif option == "2":
         circles_calibration(camera)
+    elif option == "3":
+        threshold_calibration(camera)
     camera.close()
 
 if __name__ == "__main__":
