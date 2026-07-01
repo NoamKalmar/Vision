@@ -101,6 +101,7 @@ class Robot:
         # Check for victims and act accordingly
         for i in range(len(self.cameras)):
             if self.cameras[i] is not None:
+                self.cameras[i].update_frame()
                 self.check_and_handle_victim(i)
 
         if self.debug_mode:
@@ -127,12 +128,12 @@ class Robot:
         camera = self.cameras[camera_index]
         if camera is None or not camera.on:
             return
-        camera.update_frame()
         if camera.error:
             return
         victim_status = self.get_victim_status(camera)
         camera.add_detection(victim_status)
         if victim_status != VictimStatus.FAKE and camera.is_detection_significant():
+            camera.clear_detections()
             camera.on = False
             self.waiting_cameras.append(camera_index)
             self.last_victim_time = time.time()

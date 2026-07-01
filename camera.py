@@ -45,6 +45,10 @@ class Camera:
         if count > len(self.last_detections) / 2:
             return True
         return False
+    
+    def clear_detections(self) -> None:
+        for i in range(len(self.last_detections)):
+            self.last_detections[i] = None
 
     def close(self) -> None:
         self.cap.release()
