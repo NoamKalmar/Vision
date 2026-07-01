@@ -66,7 +66,7 @@ def is_match_valid(
         if circularity < circularity_range[0] or circularity > circularity_range[1]:
             return False
     if extent_range is not None:
-        extent = contour_utils.get_circularity(contour)
+        extent = contour_utils.get_extent(contour)
         if extent < extent_range[0] or extent > extent_range[1]:
             return False
     return True
