@@ -16,11 +16,11 @@ SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.95), Letter.PSI: (0.38, 0.44), Letter.OM
 CIRCULARITY_RANGES = {Letter.PHI: (0.68, 0.76), Letter.PSI: (0.08, 0.15), Letter.OMEGA: (0.07, 0.13)}
 EXTENT_RANGES = {Letter.PHI: (0.70, 0.76), Letter.PSI: (0.22, 0.33), Letter.OMEGA: (0.25, 0.32)}
 
-NUM_SCAN_FRAMES = 10
+NUM_SCAN_FRAMES = 5
 
 CONTINUE_WAITING_TIMEOUT = 25
 
-AREA_RANGE = (1000, 15000)
+AREA_RANGE = (500, 15000)
 
 RIGHT_CAP_INDEX = 0
 LEFT_CAP_INDEX = 2
@@ -68,7 +68,7 @@ def main() -> None:
         templates=templates,
         area_range=AREA_RANGE,
         min_matches=MIN_MATCHES,
-        width_to_height_range=(0.75, 1.25),
+        width_to_height_range=(0.65, 1.35),
         solidity_ranges=SOLIDITY_RANGES,
         circularity_ranges=CIRCULARITY_RANGES,
         extent_ranges=EXTENT_RANGES
