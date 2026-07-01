@@ -3,7 +3,7 @@ import numpy as np
 from letters import get_template_contours, Letter
 import contour_utils
 from camera import Camera
-from targets import get_circle, classify_hue, get_colors, get_colored_contours
+from targets import get_circle, classify_hue, get_colors, get_layer_colors, get_colored_contours
 
 ASSETS_PATH = "assets"
 
@@ -68,8 +68,9 @@ def contours_calibration(camera: Camera) -> None:
             print("error reading from camera")
             return
         frame = camera.frame
-        # contours = list(contour_utils.get_contours(frame))
-        contours = list(get_colored_contours(frame))
+        contours = list(contour_utils.get_contours(frame))
+        # contours, mask = get_colored_contours(frame)
+        contours = list(contours)
         chosen_contour = None
         if mouse_click_x is not None:
             cv2.circle(frame, (mouse_click_x, mouse_click_y), 5, BLUE, -1)
@@ -91,6 +92,7 @@ def contours_calibration(camera: Camera) -> None:
         cv2.drawContours(frame, contours, -1, RED, 3)
 
         cv2.imshow("Settings", frame)
+        # cv2.imshow("mask", mask)
         key = cv2.waitKey(1)
         if chosen_contour is not None:
             area = cv2.contourArea(chosen_contour)
@@ -101,7 +103,7 @@ def contours_calibration(camera: Camera) -> None:
             phi = cv2.matchShapes(chosen_contour, templates[Letter.PHI], 1, 0.0)
             psi = cv2.matchShapes(chosen_contour, templates[Letter.PSI], 1, 0.0)
             omega = cv2.matchShapes(chosen_contour, templates[Letter.OMEGA], 1, 0.0)
-            print(f"area: {area:.2f}, solidity: {solidity:.2f}, w-h-ratio: {width_height_ratio:.2f}, circularity: {circularity:.2f}, extent: {extent:.2f}")
+            print(f"area: {area:.2f}, w-h-ratio: {width_height_ratio:.2f}, solidity: {solidity:.2f}, circularity: {circularity:.2f}, extent: {extent:.2f}")
             print(f"phi: {phi:.2f}, psi: {psi:.2f}, omega: {omega:.2f}")
         if key == ord("q"):
             break
@@ -118,7 +120,6 @@ def circles_calibration(camera: Camera) -> None:
             print("error reading from camera")
             return
         frame = camera.frame
-        frame_copy = frame.copy()
         circle = get_circle(frame)
         if circle is not None:
             (x, y), r = circle
@@ -132,7 +133,7 @@ def circles_calibration(camera: Camera) -> None:
         if key == ord("q"):
             break
         if key == ord("c"):
-            colors = get_colors(frame)
+            colors = get_layer_colors(frame, circle)
             print(colors)
     cv2.destroyAllWindows()
 
