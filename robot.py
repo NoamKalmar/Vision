@@ -39,9 +39,6 @@ UPPER_WHITE = np.array([180, 60, 255])
 
 BLACK_FRAME = np.zeros((480, 480, 3))
 
-root = tkinter.Tk()
-SCREEN_WIDTH = root.winfo_screenwidth()
-SCREEN_HEIGHT = root.winfo_screenheight()
 
 class Robot:
     def __init__(
@@ -67,6 +64,9 @@ class Robot:
         
         # Relevant only for debug mode
         if self.debug_mode:
+            root = tkinter.Tk()
+            self.monitor_width = root.winfo_screenwidth()
+            self.monitor_height = root.winfo_screenheight()
             self.debug_map_display: MapDisplay = MapDisplay()
             self.debug_chosen_camera_index: int = 0
             self.debug_chosen_contour: cv2.typing.MatLike | None = None
@@ -217,17 +217,16 @@ class Robot:
             if not self.debug_camera_positions_set:
                 cv2.moveWindow(
                     "Left Camera", 
-                    SCREEN_WIDTH // 10,
-                    SCREEN_HEIGHT // 2 - cv2.getWindowImageRect("Left Camera")[3] // 2
+                    self.monitor_width // 10,
+                    self.monitor_height // 2 - cv2.getWindowImageRect("Left Camera")[3] // 2
                 )
         if self.cameras[1] is not None:
             cv2.imshow("Right Camera", self.get_debug_camera_image(1))
             if not self.debug_camera_positions_set:
-                print(SCREEN_WIDTH)
                 cv2.moveWindow(
                     "Right Camera",
-                    SCREEN_WIDTH - cv2.getWindowImageRect("Right Camera")[2] - SCREEN_WIDTH // 10,
-                    SCREEN_HEIGHT // 2 - cv2.getWindowImageRect("Right Camera")[3] // 2
+                    self.monitor_width - cv2.getWindowImageRect("Right Camera")[2] - self.monitor_width // 10,
+                    self.monitor_height // 2 - cv2.getWindowImageRect("Right Camera")[3] // 2
                 )
         self.debug_camera_positions_set = True
     
