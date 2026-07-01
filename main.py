@@ -13,8 +13,8 @@ TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy",
 
 MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.0, Letter.OMEGA: 1.0}
 SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.95), Letter.PSI: (0.38, 0.44), Letter.OMEGA: (0.34, 0.40)}
-CIRCULARITY_RANGES = {Letter.PHI: (0.69, 0.75), Letter.PSI: (0.09, 0.14), Letter.OMEGA: (0.08, 0.12)}
-EXTENT_RANGES = {Letter.PHI: (0.70, 0.76), Letter.PSI: (0.25, 0.32), Letter.OMEGA: (0.27, 0.32)}
+CIRCULARITY_RANGES = {Letter.PHI: (0.68, 0.76), Letter.PSI: (0.08, 0.15), Letter.OMEGA: (0.07, 0.13)}
+EXTENT_RANGES = {Letter.PHI: (0.70, 0.76), Letter.PSI: (0.22, 0.33), Letter.OMEGA: (0.25, 0.32)}
 
 NUM_SCAN_FRAMES = 10
 

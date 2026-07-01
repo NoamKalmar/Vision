@@ -86,8 +86,8 @@ def get_letter(
             config.min_matches[letter], 
             best_contours[letter], 
             config.solidity_ranges[letter],
-            config.circularity_ranges,
-            config.extent_ranges
+            config.circularity_ranges[letter],
+            config.extent_ranges[letter]
         ):
             return letter, best_contours[letter]
     return None, None
