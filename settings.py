@@ -72,9 +72,6 @@ def contours_calibration(camera: Camera) -> None:
         # contours, mask = get_colored_contours(frame)
         contours = list(contours)
         chosen_contour = None
-        if mouse_click_x is None:
-            mouse_click_x = frame.shape[1] // 2
-            mouse_click_y = frame.shape[0] // 2
         if mouse_click_x is not None:
             cv2.circle(frame, (mouse_click_x, mouse_click_y), 5, BLUE, -1)
             min_distance_squared = None
