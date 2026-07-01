@@ -12,9 +12,9 @@ TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy",
                Letter.OMEGA: "assets/omega.npy"}
 
 MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.0, Letter.OMEGA: 1.0}
-SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.95), Letter.PSI: (0.38, 0.45), Letter.OMEGA: (0.34, 0.40)}
-CIRCULARITY_RANGES = {Letter.PHI: (0.69, 0.75), Letter.PSI: (0.10, 0.14), Letter.OMEGA: (0.08, 0.12)}
-EXTENT_RANGES = {Letter.PHI: (0.70, 0.76), Letter.PSI: (0.28, 0.33), Letter.OMEGA: (0.27, 0.32)}
+SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.95), Letter.PSI: (0.38, 0.44), Letter.OMEGA: (0.34, 0.40)}
+CIRCULARITY_RANGES = {Letter.PHI: (0.69, 0.75), Letter.PSI: (0.09, 0.14), Letter.OMEGA: (0.08, 0.12)}
+EXTENT_RANGES = {Letter.PHI: (0.70, 0.76), Letter.PSI: (0.25, 0.32), Letter.OMEGA: (0.27, 0.32)}
 
 NUM_SCAN_FRAMES = 10
 
@@ -69,7 +69,9 @@ def main() -> None:
         area_range=AREA_RANGE,
         min_matches=MIN_MATCHES,
         width_to_height_range=(0.75, 1.25),
-        solidity_ranges=SOLIDITY_RANGES
+        solidity_ranges=SOLIDITY_RANGES,
+        circularity_ranges=CIRCULARITY_RANGES,
+        extent_ranges=EXTENT_RANGES
     )
     serial_com = None
     if not args.noserial:
