@@ -60,14 +60,17 @@ def is_match_valid(
     if solidity_range is not None:
         solidity = contour_utils.get_solidity(contour)
         if solidity < solidity_range[0] or solidity > solidity_range[1]:
+            print("aaaaaaaaaaaaaaaaaa")
             return False
     if circularity_range is not None:
         circularity = contour_utils.get_circularity(contour)
         if circularity < circularity_range[0] or circularity > circularity_range[1]:
+            print("bbbbbbbbbbbbbbbbbbb") 
             return False
     if extent_range is not None:
         extent = contour_utils.get_extent(contour)
         if extent < extent_range[0] or extent > extent_range[1]:
+            print("cccccccccccccccccccc")
             return False
     return True
 
