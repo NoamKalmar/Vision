@@ -1,4 +1,4 @@
-import time
+from collections import deque
 import platform
 
 import cv2
@@ -10,7 +10,7 @@ WIDTH = 320
 HEIGHT = 240
 
 class Camera:
-    def __init__(self, cap_index: int, num_scan_frames: int = 20, flip: bool = False) -> None:
+    def __init__(self, cap_index: int, num_scan_frames: int = 20, flip: bool = False, saved_last_detections: int = 6) -> None:
         self.cap_index = cap_index
         self.num_scan_frames = num_scan_frames
         self.flip = flip
@@ -22,6 +22,7 @@ class Camera:
         self.frame: cv2.typing.MatLike | None = None
         self.frames_buffer: list[cv2.typing.MatLike] = []
         self.scan_mode: bool = False
+        self.last_detections: deque[object] = deque([None for _ in range(saved_last_detections)], maxlen=saved_last_detections)
 
     def update_frame(self) -> None:
         ret, self.frame = self.cap.read()
@@ -35,6 +36,15 @@ class Camera:
         while len(self.frames_buffer) <= self.num_scan_frames:
             self.update_frame()
             self.frames_buffer.append(self.frame)
+
+    def add_detection(self, detection: object) -> None:
+        self.last_detections.append(detection)
+    
+    def is_detection_significant(self) -> bool:
+        count = self.last_detections.count(self.last_detections[-1])
+        if count > len(self.last_detections) / 2:
+            return True
+        return False
 
     def close(self) -> None:
         self.cap.release()

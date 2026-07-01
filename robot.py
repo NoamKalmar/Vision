@@ -101,7 +101,6 @@ class Robot:
         # Check for victims and act accordingly
         for i in range(len(self.cameras)):
             if self.cameras[i] is not None:
-                self.cameras[i].update_frame()
                 self.check_and_handle_victim(i)
 
         if self.debug_mode:
@@ -126,26 +125,21 @@ class Robot:
 
     def check_and_handle_victim(self, camera_index: int) -> None:
         camera = self.cameras[camera_index]
-        if camera is None:
+        if camera is None or not camera.on:
             return
+        camera.update_frame()
         if camera.error:
-            print(f"Error while reading from camera index {camera_index}")
             return
-        if not camera.on:
-            return
-        if check_potential_victim(camera.frame, self.letters_config):
-            # Starting a scan and acting upon the results
-            print(f"Starting a scan on camera index {camera_index}")
-            camera.scan()
-            victim_status = self.get_victim_status(camera)
-            if victim_status != VictimStatus.FAKE:
-                camera.on = False
-                self.waiting_cameras.append(camera_index)
-                self.last_victim_time = time.time()
-                serial_error = self.handle_victim(camera_index, victim_status)
-                if serial_error:
-                    print("Serial Error: Trying to reconnect")
-                    self.serial_com.try_connect()
+        victim_status = self.get_victim_status(camera)
+        camera.add_detection(victim_status)
+        if victim_status != VictimStatus.FAKE and camera.is_detection_significant():
+            camera.on = False
+            self.waiting_cameras.append(camera_index)
+            self.last_victim_time = time.time()
+            serial_error = self.handle_victim(camera_index, victim_status)
+            if serial_error:
+                print("Serial Error: Trying to reconnect")
+                self.serial_com.try_connect()
 
     def continue_cameras(self) -> None:
         for camera_index in self.waiting_cameras:
@@ -182,19 +176,19 @@ class Robot:
             pass
 
     def get_victim_status(self, camera: Camera) -> VictimStatus:
-        frames_buffer = camera.frames_buffer
-        if len(frames_buffer) == 0:
-            print("Can't check victim status when the frames buffer is empty")
-            return None
+        # frames_buffer = camera.frames_buffer
+        # if len(frames_buffer) == 0:
+        #     print("Can't check victim status when the frames buffer is empty")
+        #     return None
         # First check for a letter
-        letter, contour = letters.frames_get_letter(frames_buffer, self.letters_config)
+        letter, contour = letters.get_letter(camera.frame, self.letters_config)
         if letter is not None:
             print(letter)
             self.debug_chosen_contour = contour
             status = LETTER_TO_STATUS.get(letter)
             return status
         # If no letter was found, check for a ring
-        health = targets.get_cognitive_target_health(frames_buffer)
+        health = targets.get_cognitive_target_health(camera.frame)
         if health is None:
             return VictimStatus.FAKE
         status = HEALTH_TO_STATUS.get(health)

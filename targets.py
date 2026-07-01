@@ -115,16 +115,13 @@ def get_health_from_colors(colors: list[Color] | None) -> int | None:
         health += COLOR_TO_HEALTH_VALUE[color]
     return health
 
-def get_cognitive_target_health(frames: Sequence[cv2.typing.MatLike]) -> int | None:
-    counter = Counter()
-    for frame in frames:
-        circle = get_circle(frame)
-        if circle is None:
-            return None
-        colors = get_layer_colors(frame, circle)
-        health = get_health_from_colors(colors)
-        counter[health] += 1
-    return max(counter, key=counter.get)
+def get_cognitive_target_health(frame: cv2.typing.MatLike) -> int | None:
+    circle = get_circle(frame)
+    if circle is None:
+        return None
+    colors = get_layer_colors(frame, circle)
+    health = get_health_from_colors(colors)
+    return health
 
 def classify_hue(hue) -> Color | None:
     if hue < 10 or hue > 170:

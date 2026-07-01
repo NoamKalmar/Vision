@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
-from letters import get_template_contours, Letter
+from letters import get_template_contours, Letter, get_letter, LettersConfig
 import contour_utils
 from camera import Camera
 from targets import get_circle, classify_hue, get_colors, get_layer_colors, get_colored_contours
+from main import AREA_RANGE, EXTENT_RANGES, SOLIDITY_RANGES, CIRCULARITY_RANGES, MIN_MATCHES
 
 ASSETS_PATH = "assets"
 
@@ -62,6 +63,16 @@ def get_contour_center(contour: cv2.typing.MatLike) -> tuple[int, int] | None:
 
 def contours_calibration(camera: Camera) -> None:
     templates = get_template_contours(TEMPLATE_PATHS)
+    letters_config = LettersConfig(
+        templates=templates,
+        area_range=AREA_RANGE,
+        min_matches=MIN_MATCHES,
+        width_to_height_range=(0.65, 1.35),
+        solidity_ranges=SOLIDITY_RANGES,
+        circularity_ranges=CIRCULARITY_RANGES,
+        extent_ranges=EXTENT_RANGES
+    )
+    letters_mode = False
     while camera.cap.isOpened():
         camera.update_frame()
         if camera.error:
@@ -105,6 +116,9 @@ def contours_calibration(camera: Camera) -> None:
             omega = cv2.matchShapes(chosen_contour, templates[Letter.OMEGA], 1, 0.0)
             print(f"area: {area:.2f}, w-h-ratio: {width_height_ratio:.2f}, solidity: {solidity:.2f}, circularity: {circularity:.2f}, extent: {extent:.2f}")
             print(f"phi: {phi:.2f}, psi: {psi:.2f}, omega: {omega:.2f}")
+        if letters_mode:
+            letter, contour = get_letter(frame, letters_config)
+            print(letter)            
         if key == ord("q"):
             break
         if key == ord("c"):
@@ -112,6 +126,8 @@ def contours_calibration(camera: Camera) -> None:
                 print("Please select a contour first")
             path = ask_letter_get_path()
             np.save(path, chosen_contour)
+        if key == ord("l"):
+            letters_mode = not letters_mode
 
 def circles_calibration(camera: Camera) -> None:
     while camera.cap.isOpened():

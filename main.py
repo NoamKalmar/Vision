@@ -11,7 +11,7 @@ TEMPLATE_PATHS = {Letter.PHI: "assets/phi.npy",
                Letter.PSI: "assets/psi.npy", 
                Letter.OMEGA: "assets/omega.npy"}
 
-MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 1.0, Letter.OMEGA: 1.0}
+MIN_MATCHES = {Letter.PHI: 0.2, Letter.PSI: 0.75, Letter.OMEGA: 0.75}
 SOLIDITY_RANGES = {Letter.PHI: (0.90, 0.95), Letter.PSI: (0.36, 0.46), Letter.OMEGA: (0.34, 0.40)}
 CIRCULARITY_RANGES = {Letter.PHI: (0.68, 0.76), Letter.PSI: (0.08, 0.15), Letter.OMEGA: (0.07, 0.13)}
 EXTENT_RANGES = {Letter.PHI: (0.70, 0.76), Letter.PSI: (0.22, 0.35), Letter.OMEGA: (0.26, 0.35)}
