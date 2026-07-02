@@ -130,6 +130,9 @@ class Robot:
             return
         if camera.error:
             return
+        contours = contour_utils.get_contours(camera.frame)
+        if len(contours) > 20:
+            return
         victim_status = self.get_victim_status(camera)
         camera.add_detection(victim_status)
         if victim_status != VictimStatus.FAKE and camera.is_detection_significant():
@@ -185,7 +188,6 @@ class Robot:
         letter, contour = letters.get_letter(camera.frame, self.letters_config)
         if letter is not None:
             print(letter)
-            self.debug_chosen_contour = contour
             status = LETTER_TO_STATUS.get(letter)
             return status
         # If no letter was found, check for a ring

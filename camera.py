@@ -10,7 +10,7 @@ WIDTH = 320
 HEIGHT = 240
 
 class Camera:
-    def __init__(self, cap_index: int, num_scan_frames: int = 20, flip: bool = False, saved_last_detections: int = 6) -> None:
+    def __init__(self, cap_index: int, num_scan_frames: int = 20, flip: bool = False, saved_last_detections: int = 5) -> None:
         self.cap_index = cap_index
         self.num_scan_frames = num_scan_frames
         self.flip = flip
