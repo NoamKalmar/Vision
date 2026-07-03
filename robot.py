@@ -115,7 +115,8 @@ class Robot:
         self.serial_com.read()
         if self.serial_com.got_start_message():
             self.continue_cameras()
-            self.debug_map_display.reset_map()
+            if self.debug_mode:
+                self.debug_map_display.reset_map()
         if self.serial_com.got_continue_message():
             self.continue_cameras()
         if self.debug_mode:
